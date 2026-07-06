@@ -13,8 +13,4 @@ import validationSchema from './config/validation';
     controllers: [],
     providers: [],
 })
-export class AppModule {
-    constructor() {
-        console.log('this');
-    }
-}
+export class AppModule {}
