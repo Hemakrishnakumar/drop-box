@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: dropbox-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: dropbox
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - dropbox-postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - dropbox-network
+
+  redis:
+    image: redis:8
+    container_name: dropbox-redis
+    restart: unless-stopped
+
+    ports:
+      - "6378:6379"
+
+    networks:
+      - dropbox-network
+
+  minio:
+    image: minio/minio:RELEASE.2025-06-13T11-33-47Z
+    container_name: dropbox-minio
+    restart: unless-stopped
+
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - dropbox-minio-data:/data
+
+    networks:
+      - dropbox-network
+
+networks:
+  dropbox-network:
+    driver: bridge
+
+volumes:
+  dropbox-postgres-data:
+  dropbox-minio-data:
