@@ -1,13 +1,13 @@
 import * as Joi from 'joi';
 
 export default Joi.object({
-    PORT: Joi.number().required(),
+    PORT: Joi.number().required().default(5000),
 
-    DB_HOST: Joi.string().required(),
-    DB_PORT: Joi.number().required(),
-    DB_USERNAME: Joi.string().required(),
-    DB_PASSWORD: Joi.string().required(),
-    DB_NAME: Joi.string().required(),
+    DB_HOST: Joi.string().required().default('localhost'),
+    DB_PORT: Joi.number().required().default(5434),
+    DB_USERNAME: Joi.string().required().default('admin'),
+    DB_PASSWORD: Joi.string().required().default('admin'),
+    DB_NAME: Joi.string().required().default('dropbox'),
 
     REDIS_HOST: Joi.string().required(),
     REDIS_PORT: Joi.number().required(),
