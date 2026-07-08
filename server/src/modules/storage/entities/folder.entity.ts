@@ -1,20 +1,32 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { User } from 'src/modules/user/entities/user.entity';
-import { Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+    Column,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    Unique,
+} from 'typeorm';
 import { File } from './file.entity';
 
+@Index(['owner'])
+@Index(['parentFolder'])
+@Unique(['parentFolder', 'owner', 'name'])
 @Entity('folders')
 export class Folder extends BaseEntity {
     @Column()
     name!: string;
 
-    @ManyToOne(() => User, (user) => user.folders)
+    @ManyToOne(() => User, (user) => user.folders, { nullable: false })
     @JoinColumn({
         name: 'owner_id',
     })
     owner!: User;
 
-    @ManyToOne(() => Folder, (folder) => folder.children)
+    @ManyToOne(() => Folder, (folder) => folder.children, { nullable: true })
     @JoinColumn({ name: 'parent_folder_id' })
     parentFolder?: Folder;
 

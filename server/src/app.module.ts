@@ -1,19 +1,37 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigType } from '@nestjs/config';
 import validationSchema from './config/validation';
 import databaseConfig from './config/database.config';
 import { DatabaseModule } from './database/database.module';
 import appConfig from './config/app.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { BullModule } from '@nestjs/bullmq';
+import redisConfig from './config/redis.config';
+import mailConfig from './config/mail.config';
+
+type RedisConfig = ConfigType<typeof redisConfig>;
 
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: '.env.development',
+            envFilePath: '.env',
             validationSchema,
-            load: [databaseConfig, appConfig],
+            load: [databaseConfig, appConfig, redisConfig, mailConfig],
+        }),
+        BullModule.forRootAsync({
+            inject: [redisConfig.KEY],
+            useFactory: (config: RedisConfig) => ({
+                connection: {
+                    host: config.host,
+                    port: config.port,
+                },
+            }),
         }),
         DatabaseModule,
+        AuthModule,
+        StorageModule,
     ],
     controllers: [],
     providers: [],

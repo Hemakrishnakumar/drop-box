@@ -16,7 +16,7 @@ type DatabaseConfig = ConfigType<typeof databaseConfig>;
                 username: dbConfig.user,
                 password: dbConfig.password,
                 database: dbConfig.database,
-                logging: true,
+                //logging: true,
                 autoLoadEntities: true,
                 synchronize: false,
             }),

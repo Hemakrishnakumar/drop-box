@@ -1,0 +1,7 @@
+export const BULLMQ_QUEUES = {
+    AUTH: 'AUTH',
+};
+
+export const QUEUE_JOBS = {
+    SEND_VERIFICATION_EMAIL: 'SEND_VERIFICATION_EMAIL',
+};

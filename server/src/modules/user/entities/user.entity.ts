@@ -35,11 +35,12 @@ export class User extends BaseEntity {
 
     @Column({
         name: 'storage_used',
+        type: 'bigint',
         default: 0,
     })
     storageUsed!: number;
 
-    @OneToOne(() => Folder)
+    @OneToOne(() => Folder, (folder) => folder.owner, { nullable: true })
     @JoinColumn({
         name: 'root_folder_id',
     })
