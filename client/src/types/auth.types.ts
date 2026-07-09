@@ -4,10 +4,10 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-    name: string
+    firstName: string
+    lastName: string
     email: string
     password: string
-    confirmPassword: string
 }
 
 export interface GoogleAuthPayload {
@@ -36,10 +36,7 @@ export interface LoginResponse {
     token: string
 }
 
-export interface RegisterResponse {
-    user: AuthUser
-    token: string
-}
+export type RegisterResponse = void
 
 export interface GoogleAuthResponse {
     user: AuthUser

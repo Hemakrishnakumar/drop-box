@@ -1,12 +1,12 @@
 
 import { lazy } from 'react';
-import type { LazyExoticComponent } from 'react';
+import type { ComponentType, LazyExoticComponent } from 'react';
 
 
 
 export interface RouteConfig {
     path: string
-    component: LazyExoticComponent<React.ComponentType<React.ReactElement>>
+    component: LazyExoticComponent<ComponentType>
     isPrivate: boolean
     roles?: string[]
     deny?: (role: string) => boolean

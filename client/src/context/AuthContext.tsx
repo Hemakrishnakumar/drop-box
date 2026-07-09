@@ -47,8 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         setError(null);
         try {
-            const data = await authService.register(payload);
-            setUser(data.user);
+            await authService.register(payload);
         } catch (err: unknown) {
             const message =
                 (err as { message?: string }).message ?? 'Registration failed. Please try again.';
