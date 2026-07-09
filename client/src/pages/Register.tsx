@@ -105,6 +105,7 @@ export default function Register() {
         mode: 'onChange',
     });
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const password = watch('password');
     const strength = useMemo(() => passwordStrength(password), [password]);
     const isBusy = loading || isSubmitting;
@@ -247,7 +248,7 @@ export default function Register() {
                         </div>
 
                         {error && (
-                                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                                 {error}
                             </div>
                         )}

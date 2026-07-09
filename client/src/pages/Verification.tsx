@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { API_ENDPOINTS } from '@/api/endpoints';
+import type { ApiError } from '@/api/types';
+import { authService } from '@/services';
 
 
 
@@ -16,6 +18,8 @@ const Verification: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
 
     const handleVerification = useCallback(async () => {
         if (!token) return;
@@ -25,11 +29,11 @@ const Verification: React.FC = () => {
             await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
             setSuccess(true);
         } catch (error: unknown) {
-            const errorMessage =
-            error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                : 'Verification failed. The link may be expired or invalid.';
-            setError(errorMessage || 'Verification failed. The link may be expired or invalid.');
+            const apiError = error as Partial<ApiError>;
+
+            setError(
+                apiError.message || 'Verification failed. The link may be expired or invalid.',
+            );
         } finally {
             setLoading(false);
         }
@@ -43,6 +47,33 @@ const Verification: React.FC = () => {
             setLoading(false);
         }
     }, [token, handleVerification]);
+
+    useEffect(() => {
+        if (!success) return;
+
+        const timeout = window.setTimeout(() => {
+            navigate('/login');
+        }, 2000);
+
+        return () => window.clearTimeout(timeout);
+    }, [navigate, success]);
+
+    const handleResendVerification = async () => {
+        if (!token) return;
+
+        try {
+            setResendLoading(true);
+            setResendSuccess(false);
+            await authService.resendVerification({ token });
+            setResendSuccess(true);
+        } catch (error: unknown) {
+            const apiError = error as Partial<ApiError>;
+
+            setError(apiError.message || 'Failed to send a new verification email.');
+        } finally {
+            setResendLoading(false);
+        }
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
@@ -66,8 +97,7 @@ const Verification: React.FC = () => {
                                     Email Verified Successfully!
                                 </h3>
                                 <p className="text-gray-600">
-                                    Your email has been verified. You can now log in to your
-                                    account.
+                                    Your email has been verified. Redirecting you to login...
                                 </p>
                             </div>
                             <Button onClick={() => navigate('/login')} className="w-full">
@@ -93,10 +123,19 @@ const Verification: React.FC = () => {
                                 >
                                     Go to Login
                                 </Button>
-                                <Button onClick={() => navigate('/register')} className="flex-1">
-                                    Register Again
+                                <Button
+                                    onClick={handleResendVerification}
+                                    className="flex-1"
+                                    disabled={!token || resendLoading || resendSuccess}
+                                >
+                                    {resendLoading ? 'Sending...' : 'Send New Link'}
                                 </Button>
                             </div>
+                            {resendSuccess && (
+                                <p className="text-sm font-medium text-green-700">
+                                    A new verification email has been sent. Please check your inbox.
+                                </p>
+                            )}
                         </div>
                     )}
 

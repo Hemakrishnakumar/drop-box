@@ -1,4 +1,10 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    Inject,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { RegisterDto } from './dto/register.dto';
 import { DataSource, Repository } from 'typeorm';
@@ -11,8 +17,17 @@ import { UserStatus } from '../user/enums/user-status';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { BULLMQ_QUEUES, QUEUE_JOBS } from './constants/queue.constants';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { createHmac, timingSafeEqual } from 'crypto';
+import { ResendVerificationEmailDto } from './dto/resend-verification-email.dto';
 
 type AppConfig = ConfigType<typeof appConfig>;
+
+interface EmailVerificationTokenPayload {
+    email: string;
+    type: 'email-verification';
+    exp: number;
+}
 
 @Injectable()
 export class AuthService {
@@ -82,5 +97,164 @@ export class AuthService {
                 },
             );
         }
+    }
+
+    async verifyEmail(dto: VerifyEmailDto): Promise<void> {
+        const payload = this.verifyEmailVerificationToken(dto.token);
+        const user = await this.userRepository.findOne({
+            where: {
+                email: payload.email,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found.');
+        }
+
+        if (user.emailVerified && user.status === UserStatus.ACTIVE) {
+            return;
+        }
+
+        user.emailVerified = true;
+        user.status = UserStatus.ACTIVE;
+
+        await this.userRepository.save(user);
+    }
+
+    async resendVerificationEmail(dto: ResendVerificationEmailDto): Promise<void> {
+        const email = dto.email ?? this.getEmailFromVerificationToken(dto.token);
+
+        if (!email) {
+            throw new BadRequestException('Email or verification token is required.');
+        }
+
+        const user = await this.userRepository.findOne({
+            where: {
+                email,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found.');
+        }
+
+        if (user.emailVerified) {
+            throw new BadRequestException('Email is already verified.');
+        }
+
+        await this.queue.add(
+            QUEUE_JOBS.SEND_VERIFICATION_EMAIL,
+            {
+                email: user.email,
+                name: user.firstName,
+            },
+            {
+                attempts: 5,
+                backoff: {
+                    type: 'exponential',
+                    delay: 3000,
+                },
+                removeOnComplete: 100,
+                removeOnFail: 1000,
+            },
+        );
+    }
+
+    private verifyEmailVerificationToken(token: string): EmailVerificationTokenPayload {
+        const secret = this.appConfig.tokenSecret;
+
+        if (!secret) {
+            throw new Error('Email verification token secret is not configured.');
+        }
+
+        const [payloadPart, signature] = token.split('.');
+
+        if (!payloadPart || !signature) {
+            throw new BadRequestException('Invalid verification token.');
+        }
+
+        const expectedSignature = createHmac('sha256', secret)
+            .update(payloadPart)
+            .digest('base64url');
+
+        if (!this.isSignatureValid(signature, expectedSignature)) {
+            throw new BadRequestException('Invalid verification token.');
+        }
+
+        const payload = this.parseEmailVerificationPayload(payloadPart);
+        const now = Math.floor(Date.now() / 1000);
+
+        if (payload.exp < now) {
+            throw new BadRequestException('Verification link has expired.');
+        }
+
+        return payload;
+    }
+
+    private getEmailFromVerificationToken(token?: string): string | undefined {
+        if (!token) {
+            return undefined;
+        }
+
+        const [payloadPart, signature] = token.split('.');
+
+        if (!payloadPart || !signature) {
+            throw new BadRequestException('Invalid verification token.');
+        }
+
+        const expectedSignature = createHmac('sha256', this.getTokenSecret())
+            .update(payloadPart)
+            .digest('base64url');
+
+        if (!this.isSignatureValid(signature, expectedSignature)) {
+            throw new BadRequestException('Invalid verification token.');
+        }
+
+        return this.parseEmailVerificationPayload(payloadPart).email;
+    }
+
+    private parseEmailVerificationPayload(payloadPart: string): EmailVerificationTokenPayload {
+        try {
+            const payload = JSON.parse(
+                Buffer.from(payloadPart, 'base64url').toString('utf8'),
+            ) as Partial<EmailVerificationTokenPayload>;
+
+            if (
+                !payload.email ||
+                payload.type !== 'email-verification' ||
+                typeof payload.exp !== 'number'
+            ) {
+                throw new Error('Invalid payload.');
+            }
+
+            return {
+                email: payload.email,
+                type: payload.type,
+                exp: payload.exp,
+            };
+        } catch {
+            throw new BadRequestException('Invalid verification token.');
+        }
+    }
+
+    private isSignatureValid(signature: string, expectedSignature: string): boolean {
+        const signatureBuffer = Buffer.from(signature);
+        const expectedSignatureBuffer = Buffer.from(expectedSignature);
+
+        if (signatureBuffer.length !== expectedSignatureBuffer.length) {
+            return false;
+        }
+
+        return timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+    }
+
+    private getTokenSecret(): string {
+        const secret = this.appConfig.tokenSecret;
+
+        if (!secret) {
+            throw new Error('Email verification token secret is not configured.');
+        }
+
+        return secret;
     }
 }

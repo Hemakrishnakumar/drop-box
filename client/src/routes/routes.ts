@@ -26,6 +26,11 @@ export const routes: RouteConfig[] = [
         isPrivate: false,
     },
     {
+        path: '/verify-email',
+        component: lazy(() => import('../pages/Verification')),
+        isPrivate: false,
+    },
+    {
         path: '/home',
         component: lazy(() => import('../pages/Home')),
         isPrivate: true,

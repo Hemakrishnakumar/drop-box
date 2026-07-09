@@ -90,6 +90,6 @@ export class AuthProcessor extends WorkerHost {
     private createVerificationUrl(token: string): string {
         const baseUrl = this.appConfig.baseUrl.replace(/\/$/, '');
 
-        return `${baseUrl}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
+        return `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
     }
 }

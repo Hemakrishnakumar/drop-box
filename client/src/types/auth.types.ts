@@ -48,7 +48,8 @@ export interface VerifyEmailPayload {
 }
 
 export interface ResendVerificationPayload {
-    email: string
+    email?: string
+    token?: string
 }
 
 
