@@ -1,4 +1,4 @@
-import { useAuthContext } from '@/context/authContext';
+import { useAuth } from '@/context';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -12,7 +12,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute = ({ children, roles, deny, redirectTo = '/home' }: PrivateRouteProps) => {
-    const { isAuthenticated, user, loading } = useAuthContext();
+    const { isAuthenticated, user, loading } = useAuth();
     const location = useLocation();
 
     if (loading) return null;

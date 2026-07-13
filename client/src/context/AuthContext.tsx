@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { authService } from '@/services';
 import type { AuthUser, LoginPayload, RegisterPayload, GoogleAuthPayload } from '@/types';
-import { AuthContext } from './authContext';
+import { AuthContext } from './index';
 
 
 
@@ -104,3 +104,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         </AuthContext.Provider>
     );
 }
+
+

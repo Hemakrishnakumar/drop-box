@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ResendVerificationEmailDto } from './dto/resend-verification-email.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('/api/v1/auth')
 export class AuthController {
@@ -24,5 +25,10 @@ export class AuthController {
     async resendVerification(@Body() dto: ResendVerificationEmailDto) {
         await this.authService.resendVerificationEmail(dto);
         return { message: 'Verification email sent successfully' };
+    }
+
+    @Post('login')
+    async login(@Body() dto: LoginDto) {
+        await this.authService.login(dto);
     }
 }

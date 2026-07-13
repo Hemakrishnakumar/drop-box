@@ -28,4 +28,5 @@ export default Joi.object({
     NODEMAILER_PORT: Joi.number(),
     GMAIL_APP_USER: Joi.string(),
     GMAIL_APP_PASSWORD: Joi.string(),
+    SESSION_EXPIRATION_IN_HOURS: Joi.number().required().default(24),
 });

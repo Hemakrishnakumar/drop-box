@@ -4,6 +4,7 @@ import {
     Inject,
     Injectable,
     NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { RegisterDto } from './dto/register.dto';
@@ -20,6 +21,7 @@ import { BULLMQ_QUEUES, QUEUE_JOBS } from './constants/queue.constants';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ResendVerificationEmailDto } from './dto/resend-verification-email.dto';
+import { LoginDto } from './dto/login.dto';
 
 type AppConfig = ConfigType<typeof appConfig>;
 
@@ -158,6 +160,23 @@ export class AuthService {
                 removeOnFail: 1000,
             },
         );
+    }
+
+    async login(dto: LoginDto) {
+        const { email, password } = dto;
+        const user = await this.userRepository.findOne({
+            where: {
+                email,
+            },
+        });
+        if (!user || !user?.password || (await argon2.verify(user.password, password))) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        const session = this.createSession(user.id);
+    }
+
+    private createSession(id: string) {
+        //implement session creation
     }
 
     private verifyEmailVerificationToken(token: string): EmailVerificationTokenPayload {
