@@ -9,6 +9,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { BullModule } from '@nestjs/bullmq';
 import redisConfig from './config/redis.config';
 import mailConfig from './config/mail.config';
+import { RedisModule } from './redis/redis.module';
 
 type RedisConfig = ConfigType<typeof redisConfig>;
 
@@ -32,6 +33,7 @@ type RedisConfig = ConfigType<typeof redisConfig>;
         DatabaseModule,
         AuthModule,
         StorageModule,
+        RedisModule,
     ],
     controllers: [],
     providers: [],

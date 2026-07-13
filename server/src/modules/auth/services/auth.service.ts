@@ -7,21 +7,21 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto } from '../dto/register.dto';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
+import { User } from '../../user/entities/user.entity';
 import { ConfigType } from '@nestjs/config';
 import appConfig from 'src/config/app.config';
-import { Folder } from '../storage/entities/folder.entity';
+import { Folder } from '../../storage/entities/folder.entity';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { UserStatus } from '../user/enums/user-status';
+import { UserStatus } from '../../user/enums/user-status';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { BULLMQ_QUEUES, QUEUE_JOBS } from './constants/queue.constants';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { BULLMQ_QUEUES, QUEUE_JOBS } from '../constants/queue.constants';
+import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { ResendVerificationEmailDto } from './dto/resend-verification-email.dto';
-import { LoginDto } from './dto/login.dto';
+import { ResendVerificationEmailDto } from '../dto/resend-verification-email.dto';
+import { LoginDto } from '../dto/login.dto';
 
 type AppConfig = ConfigType<typeof appConfig>;
 
@@ -108,15 +108,12 @@ export class AuthService {
                 email: payload.email,
             },
         });
-
         if (!user) {
             throw new NotFoundException('User not found.');
         }
-
         if (user.emailVerified && user.status === UserStatus.ACTIVE) {
             return;
         }
-
         user.emailVerified = true;
         user.status = UserStatus.ACTIVE;
 
@@ -169,15 +166,18 @@ export class AuthService {
                 email,
             },
         });
-        if (!user || !user?.password || (await argon2.verify(user.password, password))) {
+        if (!user || !user?.password || !(await argon2.verify(user.password, password))) {
             throw new UnauthorizedException('Invalid credentials');
         }
-        const session = this.createSession(user.id);
+        if (!user.emailVerified) {
+            throw new BadRequestException('Email is not yet verified, Please verify email');
+        }
+        // const session = this.createSession(user.id);
     }
 
-    private createSession(id: string) {
-        //implement session creation
-    }
+    // private createSession(id: string) {
+    //     //implement session creation
+    // }
 
     private verifyEmailVerificationToken(token: string): EmailVerificationTokenPayload {
         const secret = this.appConfig.tokenSecret;
