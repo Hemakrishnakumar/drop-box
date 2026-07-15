@@ -10,6 +10,9 @@ import { BullModule } from '@nestjs/bullmq';
 import redisConfig from './config/redis.config';
 import mailConfig from './config/mail.config';
 import { RedisModule } from './redis/redis.module';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { join } from 'node:path';
 
 type RedisConfig = ConfigType<typeof redisConfig>;
 
@@ -20,6 +23,15 @@ type RedisConfig = ConfigType<typeof redisConfig>;
             envFilePath: '.env',
             validationSchema,
             load: [databaseConfig, appConfig, redisConfig, mailConfig],
+        }),
+        GraphQLModule.forRoot<ApolloDriverConfig>({
+            driver: ApolloDriver,
+            path: '/graphql',
+            autoSchemaFile: join(process.cwd(), 'schema.gql'),
+            sortSchema: true,
+            introspection: true,
+            playground: true,
+            graphiql: true,
         }),
         BullModule.forRootAsync({
             inject: [redisConfig.KEY],

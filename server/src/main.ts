@@ -12,6 +12,12 @@ const BULL_BOARD_PATH = '/admin/queues';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+
+    app.enableCors({
+        origin: ['http://localhost:5173', 'https://studio.apollographql.com'],
+        credentials: true,
+    });
+
     const serverAdapter = new ExpressAdapter();
     const authQueue = app.get<Queue>(getQueueToken(BULLMQ_QUEUES.AUTH));
 

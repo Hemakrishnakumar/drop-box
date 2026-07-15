@@ -1,6 +1,9 @@
+import { Field, InputType } from '@nestjs/graphql';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class VerifyEmailDto {
+@InputType()
+export class VerifyEmailInput {
+    @Field()
     @IsString()
     @IsNotEmpty()
     token!: string;

@@ -6,6 +6,7 @@
 /server/.env.*
 /server/.env
 !/server/.env.example
+/server/schema.gql
 
 /client/node_modules/
 /client/dist/

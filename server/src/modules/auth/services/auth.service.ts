@@ -7,7 +7,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
-import { RegisterDto } from '../dto/register.dto';
+import { RegisterInput } from '../inputs/register.input';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { ConfigType } from '@nestjs/config';
@@ -18,10 +18,10 @@ import { UserStatus } from '../../user/enums/user-status';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { BULLMQ_QUEUES, QUEUE_JOBS } from '../constants/queue.constants';
-import { VerifyEmailDto } from '../dto/verify-email.dto';
+import { VerifyEmailInput } from '../inputs/verify-email.input';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { ResendVerificationEmailDto } from '../dto/resend-verification-email.dto';
-import { LoginDto } from '../dto/login.dto';
+import { ResendVerificationEmailInput } from '../inputs/resend-verification-email.input';
+import { LoginInput } from '../inputs/login.input';
 
 type AppConfig = ConfigType<typeof appConfig>;
 
@@ -44,8 +44,8 @@ export class AuthService {
         private queue: Queue,
     ) {}
 
-    async register(registerDto: RegisterDto): Promise<void> {
-        const { email, firstName, lastName, password } = registerDto;
+    async register(registerInput: RegisterInput): Promise<void> {
+        const { email, firstName, lastName, password } = registerInput;
 
         const existingUser = await this.userRepository.findOne({
             where: {
@@ -101,7 +101,7 @@ export class AuthService {
         }
     }
 
-    async verifyEmail(dto: VerifyEmailDto): Promise<void> {
+    async verifyEmail(dto: VerifyEmailInput): Promise<void> {
         const payload = this.verifyEmailVerificationToken(dto.token);
         const user = await this.userRepository.findOne({
             where: {
@@ -120,7 +120,7 @@ export class AuthService {
         await this.userRepository.save(user);
     }
 
-    async resendVerificationEmail(dto: ResendVerificationEmailDto): Promise<void> {
+    async resendVerificationEmail(dto: ResendVerificationEmailInput): Promise<void> {
         const email = dto.email ?? this.getEmailFromVerificationToken(dto.token);
 
         if (!email) {
@@ -159,7 +159,7 @@ export class AuthService {
         );
     }
 
-    async login(dto: LoginDto) {
+    async login(dto: LoginInput): Promise<void> {
         const { email, password } = dto;
         const user = await this.userRepository.findOne({
             where: {
