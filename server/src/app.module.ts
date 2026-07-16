@@ -15,6 +15,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'node:path';
 import { APP_GUARD } from '@nestjs/core';
 import { SessionGuard } from './common/guards/session.guard';
+import { GraphqlContext } from './common/types/common';
 
 type RedisConfig = ConfigType<typeof redisConfig>;
 
@@ -29,7 +30,7 @@ type RedisConfig = ConfigType<typeof redisConfig>;
         GraphQLModule.forRoot<ApolloDriverConfig>({
             driver: ApolloDriver,
             path: '/graphql',
-            context: ({ req, res }) => ({ req, res }),
+            context: ({ req, res }: GraphqlContext) => ({ req, res }),
             autoSchemaFile: join(process.cwd(), 'schema.gql'),
             sortSchema: true,
             introspection: true,
