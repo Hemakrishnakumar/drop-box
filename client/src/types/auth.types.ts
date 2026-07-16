@@ -6,6 +6,8 @@ import type {
     VerifyEmailMutationVariables,
 } from '@/graphql/generated/graphql';
 
+
+
 export type LoginPayload = LoginMutationVariables;
 export type RegisterPayload = RegisterMutationVariables;
 export type VerifyEmailPayload = VerifyEmailMutationVariables;

@@ -3,6 +3,8 @@ import { authService } from '@/services';
 import type { AuthUser, LoginPayload, RegisterPayload } from '@/types';
 import { AuthContext } from './index';
 
+
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
