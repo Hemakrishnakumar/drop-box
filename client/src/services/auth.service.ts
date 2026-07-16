@@ -1,109 +1,90 @@
-import type { ResendVerificationPayload, VerifyEmailPayload } from '@/types/auth.types';
-import { apiClient, API_ENDPOINTS } from '../api';
-import type { RequestCallbacks, RequestOptions } from '../api';
 import type {
-    LoginPayload,
-    LoginResponse,
-    RegisterPayload,
-    RegisterResponse,
-    GoogleAuthPayload,
-    GoogleAuthResponse,
-    ForgotPasswordPayload,
-    ResetPasswordPayload,
+    LoginMutation,
+    LoginMutationVariables,
+    ProfileQuery,
+    RegisterMutationVariables,
+    ResendVerificationMutationVariables,
+    VerifyEmailMutationVariables,
+} from '@/graphql/generated/graphql';
+import {
+    LoginDocument,
+    ProfileDocument,
+    RegisterDocument,
+    ResendVerificationDocument,
+    VerifyEmailDocument,
+} from '@/graphql/generated/graphql';
+import { graphqlClient } from '@/graphql/client';
+import type {
     AuthUser,
-} from '../types';
-
-
-
-const { AUTH } = API_ENDPOINTS;
+    LoginPayload,
+    RegisterPayload,
+    ResendVerificationPayload,
+    VerifyEmailPayload,
+} from '@/types';
 
 export const authService = {
-    /**
-     * Accepts RequestCallbacks directly — no params or extra headers needed.
-     * Use when the call site only cares about success/error side-effects.
-     *
-     * @example
-     * authService.login(credentials, {
-     *   onSuccess: (data) => navigate("/dashboard"),
-     *   onError:   (err)  => toast.error(err.message),
-     * });
-     */
-    login(payload: LoginPayload, callbacks?: RequestCallbacks<LoginResponse>) {
-        return apiClient.post<LoginResponse>(AUTH.LOGIN, payload, callbacks);
-    },
-    register(payload: RegisterPayload, callbacks?: RequestCallbacks<RegisterResponse>) {
-        return apiClient.post<RegisterResponse>(AUTH.REGISTER, payload, callbacks);
+    async login(payload: LoginPayload): Promise<NonNullable<LoginMutation['login']>> {
+        const { data } = await graphqlClient.mutate({
+            mutation: LoginDocument,
+            variables: payload satisfies LoginMutationVariables,
+            update(cache, result) {
+                const user = result.data?.login.user;
+
+                if (user) {
+                    cache.writeQuery({
+                        query: ProfileDocument,
+                        data: { profile: user },
+                    });
+                }
+            },
+        });
+
+        if (!data?.login.success) {
+            throw new Error('Login failed. Please try again.');
+        }
+
+        return data.login;
     },
 
-    googleAuth(payload: GoogleAuthPayload, callbacks?: RequestCallbacks<GoogleAuthResponse>) {
-        return apiClient.post<GoogleAuthResponse>(AUTH.GOOGLE, payload, callbacks);
+    async register(payload: RegisterPayload): Promise<void> {
+        const { data } = await graphqlClient.mutate({
+            mutation: RegisterDocument,
+            variables: payload satisfies RegisterMutationVariables,
+        });
+
+        if (!data?.register.success) {
+            throw new Error(data?.register.message ?? 'Registration failed. Please try again.');
+        }
     },
 
-    /**
-     * Uses RequestCallbacks — logout carries no payload or query params.
-     *
-     * @example
-     * authService.logout({
-     *   onSuccess: () => navigate("/login"),
-     *   onError:   (err) => console.error(err.message),
-     * });
-     */
-    logout(callbacks?: RequestCallbacks<null>) {
-        return apiClient.post<null>(AUTH.LOGOUT, undefined, callbacks);
+    async getProfile(): Promise<AuthUser> {
+        const { data } = await graphqlClient.query({
+            query: ProfileDocument,
+            fetchPolicy: 'cache-first',
+        });
+
+        return data.profile as ProfileQuery['profile'];
     },
 
-    /**
-     * Uses RequestCallbacks — profile is a simple GET with no params.
-     *
-     * @example
-     * authService.getProfile({
-     *   onSuccess: (user) => setUser(user),
-     *   onError:   (err)  => toast.error(err.message),
-     * });
-     */
-    getProfile(callbacks?: RequestCallbacks<AuthUser>) {
-        return apiClient.get<AuthUser>(AUTH.PROFILE, callbacks);
+    async verifyEmail(payload: VerifyEmailPayload): Promise<void> {
+        const { data } = await graphqlClient.mutate({
+            mutation: VerifyEmailDocument,
+            variables: payload satisfies VerifyEmailMutationVariables,
+        });
+
+        if (!data?.verifyEmail.success) {
+            throw new Error(data?.verifyEmail.message ?? 'Email verification failed.');
+        }
     },
 
-    /**
-     * Uses RequestCallbacks — simple fire-and-forget with side-effect feedback.
-     *
-     * @example
-     * authService.forgotPassword({ email }, {
-     *   onSuccess: () => toast.success("Reset link sent"),
-     *   onError:   (err) => toast.error(err.message),
-     * });
-     */
-    forgotPassword(payload: ForgotPasswordPayload, callbacks?: RequestCallbacks<null>) {
-        return apiClient.post<null>(AUTH.FORGOT_PASSWORD, payload, callbacks);
-    },
+    async resendVerification(payload: ResendVerificationPayload): Promise<void> {
+        const { data } = await graphqlClient.mutate({
+            mutation: ResendVerificationDocument,
+            variables: payload satisfies ResendVerificationMutationVariables,
+        });
 
-    /**
-     * Uses RequestCallbacks — confirmation call with no query params needed.
-     *
-     * @example
-     * authService.resetPassword({ token, password }, {
-     *   onSuccess: () => navigate("/login"),
-     *   onError:   (err) => setError(err.message),
-     * });
-     */
-    resetPassword(payload: ResetPasswordPayload, callbacks?: RequestCallbacks<null>) {
-        return apiClient.post<null>(AUTH.RESET_PASSWORD, payload, callbacks);
-    },
-
-    /**
-     * Uses full RequestOptions — may need custom headers (e.g. X-Refresh-Token)
-     * in some backend implementations, so we keep the wider type here.
-     */
-    refreshSession(opts?: RequestOptions<null>) {
-        return apiClient.post<null>(AUTH.REFRESH, undefined, opts);
-    },
-
-    verifyEmail(payload: VerifyEmailPayload, callbacks?: RequestCallbacks<null>) {
-        return apiClient.post<null>(AUTH.VERIFY_EMAIL, payload, callbacks);
-    },
-
-    resendVerification(payload: ResendVerificationPayload, callbacks?: RequestCallbacks<null>) {
-        return apiClient.post<null>(AUTH.RESEND_VERIFICATION, payload, callbacks);
+        if (!data?.resendVerification.success) {
+            throw new Error(data?.resendVerification.message ?? 'Unable to resend verification email.');
+        }
     },
 };

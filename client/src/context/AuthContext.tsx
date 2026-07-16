@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { authService } from '@/services';
-import type { AuthUser, LoginPayload, RegisterPayload, GoogleAuthPayload } from '@/types';
+import type { AuthUser, LoginPayload, RegisterPayload } from '@/types';
 import { AuthContext } from './index';
-
-
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -15,8 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refetchUser = useCallback(async () => {
         setLoading(true);
         try {
-            const userData = await authService.getProfile();
-            setUser(userData);
+            setUser(await authService.getProfile());
         } catch {
             setUser(null);
         } finally {
@@ -25,15 +22,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        refetchUser();
+        void refetchUser();
     }, [refetchUser]);
 
     const login = useCallback(async (payload: LoginPayload) => {
         setLoading(true);
         setError(null);
+
         try {
-            const data = await authService.login(payload);
-            setUser(data.user);
+            const { user: authenticatedUser } = await authService.login(payload);
+            setUser(authenticatedUser);
         } catch (err: unknown) {
             const message = (err as { message?: string }).message ?? 'Login failed. Please try again.';
             setError(message);
@@ -46,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const register = useCallback(async (payload: RegisterPayload) => {
         setLoading(true);
         setError(null);
+
         try {
             await authService.register(payload);
         } catch (err: unknown) {
@@ -58,45 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const googleAuth = useCallback(async (payload: GoogleAuthPayload) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await authService.googleAuth(payload);
-            setUser(data.user);
-        } catch (err: unknown) {
-            const message =
-                (err as { message?: string }).message ?? 'Google sign-in failed. Please try again.';
-            setError(message);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const logout = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            await authService.logout();
-            await refetchUser();
-        } finally {
-            setLoading(false);
-        }
-    }, [refetchUser]);
-
     return (
         <AuthContext.Provider
             value={{
                 user,
                 loading,
-                isAuthenticated: !!user,
+                isAuthenticated: Boolean(user),
                 error,
                 clearError,
                 login,
                 register,
-                googleAuth,
-                logout,
                 refetchUser,
             }}
         >
@@ -104,5 +74,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         </AuthContext.Provider>
     );
 }
-
-

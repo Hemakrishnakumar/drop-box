@@ -3,9 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { apiClient } from '@/api/client';
-import { API_ENDPOINTS } from '@/api/endpoints';
-import type { ApiError } from '@/api/types';
 import { authService } from '@/services';
 
 
@@ -26,10 +23,10 @@ const Verification: React.FC = () => {
 
         try {
             setLoading(true);
-            await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
+            await authService.verifyEmail({ token });
             setSuccess(true);
         } catch (error: unknown) {
-            const apiError = error as Partial<ApiError>;
+            const apiError = error as { message?: string };
 
             setError(
                 apiError.message || 'Verification failed. The link may be expired or invalid.',
@@ -67,7 +64,7 @@ const Verification: React.FC = () => {
             await authService.resendVerification({ token });
             setResendSuccess(true);
         } catch (error: unknown) {
-            const apiError = error as Partial<ApiError>;
+            const apiError = error as { message?: string };
 
             setError(apiError.message || 'Failed to send a new verification email.');
         } finally {

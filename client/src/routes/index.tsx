@@ -10,10 +10,10 @@ import PublicRoute from './PublicRoute';
 const Spinner = () => <div>Loading...</div>;
 
 const renderRoute = (route: RouteConfig) => {
-    const { path, component: Component, isPrivate, roles, deny, redirectTo, children } = route;
+    const { path, component: Component, isPrivate, children } = route;
 
     const wrappedElement = isPrivate ? (
-        <PrivateRoute roles={roles} deny={deny} redirectTo={redirectTo}>
+        <PrivateRoute>
             <Component />
         </PrivateRoute>
     ) : (

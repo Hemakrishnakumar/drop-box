@@ -1,67 +1,24 @@
-export interface LoginPayload {
-    email: string
-    password: string
-}
+import type {
+    LoginMutationVariables,
+    RegisterMutationVariables,
+    ResendVerificationMutationVariables,
+    UserFieldsFragment,
+    VerifyEmailMutationVariables,
+} from '@/graphql/generated/graphql';
 
-export interface RegisterPayload {
-    firstName: string
-    lastName: string
-    email: string
-    password: string
-}
-
-export interface GoogleAuthPayload {
-    token: string
-}
-
-export interface ForgotPasswordPayload {
-    email: string
-}
-
-export interface ResetPasswordPayload {
-    token: string
-    password: string
-}
-
-export interface AuthUser {
-    id?: string | number
-    name?: string
-    email?: string
-    role?: string
-    [key: string]: unknown
-}
-
-export interface LoginResponse {
-    user: AuthUser
-    token: string
-}
-
-export type RegisterResponse = void
-
-export interface GoogleAuthResponse {
-    user: AuthUser
-    token: string
-}
-
-export interface VerifyEmailPayload {
-    token: string
-}
-
-export interface ResendVerificationPayload {
-    email?: string
-    token?: string
-}
-
+export type LoginPayload = LoginMutationVariables;
+export type RegisterPayload = RegisterMutationVariables;
+export type VerifyEmailPayload = VerifyEmailMutationVariables;
+export type ResendVerificationPayload = ResendVerificationMutationVariables;
+export type AuthUser = UserFieldsFragment;
 
 export interface AuthContextValue {
-    user: AuthUser | null
-    loading: boolean
-    isAuthenticated: boolean
-    error: string | null
-    clearError: () => void
-    login: (payload: LoginPayload) => Promise<void>  
-    register: (payload: RegisterPayload) => Promise<void>  
-    googleAuth: (payload: GoogleAuthPayload) => Promise<void>
-    logout: () => Promise<void>
-    refetchUser: () => Promise<void>
+    user: AuthUser | null;
+    loading: boolean;
+    isAuthenticated: boolean;
+    error: string | null;
+    clearError: () => void;
+    login: (payload: LoginPayload) => Promise<void>;
+    register: (payload: RegisterPayload) => Promise<void>;
+    refetchUser: () => Promise<void>;
 }

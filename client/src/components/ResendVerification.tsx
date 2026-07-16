@@ -32,16 +32,16 @@ export default function ResendVerification() {
     const handleSubmit = async (data: ResendVerificationFormData) => {
         setLoading(true);
 
-        authService.resendVerification(data, {
-            onSuccess: () => {
-                showToast('Verification email sent successfully!', 'success');
-            },
-            onError: (err) => {
-                showToast(err.message || 'Failed to resend verification email', 'error');
-            },
-        });
-
-        setLoading(false);
+        try {
+            await authService.resendVerification(data);
+            showToast('Verification email sent successfully!', 'success');
+        } catch (error: unknown) {
+            const message =
+                (error as { message?: string }).message ?? 'Failed to resend verification email';
+            showToast(message, 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

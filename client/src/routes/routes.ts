@@ -8,9 +8,6 @@ export interface RouteConfig {
     path: string
     component: LazyExoticComponent<ComponentType>
     isPrivate: boolean
-    roles?: string[]
-    deny?: (role: string) => boolean
-    redirectTo?: string
     children?: RouteConfig[]
 }
 
@@ -35,45 +32,6 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('../pages/Home')),
         isPrivate: true,
     },
-    {
-        path: '/admin/users',
-        component: lazy(() => import('../pages/Admin/Users')),
-        isPrivate: false,
-        roles: ['admin', 'superAdmin'],
-    },
-    {
-        path: '/admin/users/:id',
-        component: lazy(() => import('../pages/Admin/UserDetails')),
-        isPrivate: false,
-        roles: ['admin', 'superAdmin'],
-    },
-
-    // {
-    //     path: '/admin',
-    //     component: lazy(() => import('../layouts/AdminLayout')),
-    //     isPrivate: true,
-    //     roles: ['admin'],
-    //     children: [
-    //         {
-    //             path: '',
-    //             component: lazy(() => import('../pages/Admin/Dashboard')),
-    //             isPrivate: true,
-    //             roles: ['admin'],
-    //         },
-    //         {
-    //             path: 'users',
-    //             component: lazy(() => import('../pages/Admin/Users')),
-    //             isPrivate: true,
-    //             roles: ['admin'],
-    //         },
-    //         {
-    //             path: 'reports',
-    //             component: lazy(() => import('../pages/Admin/Reports')),
-    //             isPrivate: true,
-    //             roles: ['admin'],
-    //         },
-    //     ],
-    // },
     {
         path: '/forbidden',
         component: lazy(() => import('../pages/Forbidden')),
