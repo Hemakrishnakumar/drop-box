@@ -18,6 +18,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context';
 import { showToast } from '@/lib/toast';
 
+
+
 const navigationItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'My Files', icon: FolderOpen, path: '/files' },
