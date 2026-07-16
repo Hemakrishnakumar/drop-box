@@ -57,12 +57,13 @@ function GoogleIcon() {
 
 export default function Login() {
     const navigate = useNavigate();
-    const { login: loginUser, loading, error } = useAuth();
+    const { login: loginUser, loading, error, clearError } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
 
     const {
         register,
         handleSubmit,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -71,8 +72,12 @@ export default function Login() {
     });
 
     const isBusy = loading || isSubmitting;
+    // eslint-disable-next-line react-hooks/incompatible-library
+    const email = watch('email');
+    const isEmailUnverified = /email is not yet verified/i.test(error ?? '');
 
     useEffect(() => {
+        clearError();
         const root = document.getElementById('root');
 
         root?.classList.add('registration-page-root');
@@ -80,7 +85,7 @@ export default function Login() {
         return () => {
             root?.classList.remove('registration-page-root');
         };
-    }, []);
+    }, [clearError]);
 
     const onSubmit = useCallback(
         async ({ email, password }: LoginFormData) => {
@@ -199,7 +204,15 @@ export default function Login() {
 
                         {error && (
                             <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                                {error}
+                                <p>{error}</p>
+                                {isEmailUnverified && (
+                                    <Link
+                                        to={`/resend-verification?email=${encodeURIComponent(email)}`}
+                                        className="mt-1 inline-block font-bold text-[#0b6ff9] underline-offset-4 hover:underline"
+                                    >
+                                        Request a new verification email
+                                    </Link>
+                                )}
                             </div>
                         )}
 

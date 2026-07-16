@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DynamicForm } from '@/components/forms/DynamicForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
@@ -22,12 +23,13 @@ const resendFields: FormFieldConfig[] = [
     },
 ];
 
-const defaultValues: ResendVerificationFormData = {
-    email: '',
-};
-
 export default function ResendVerification() {
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
+    const defaultValues = useMemo<ResendVerificationFormData>(
+        () => ({ email: searchParams.get('email') ?? '' }),
+        [searchParams],
+    );
 
     const handleSubmit = async (data: ResendVerificationFormData) => {
         setLoading(true);

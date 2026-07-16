@@ -52,8 +52,8 @@ export const VERIFY_EMAIL = gql`
 `;
 
 export const RESEND_VERIFICATION = gql`
-    mutation ResendVerification($email: String, $token: String) {
-        resendVerification(email: $email, token: $token) {
+    mutation ResendVerification($email: String!) {
+        resendVerification(email: $email) {
             success
             message
         }

@@ -28,6 +28,11 @@ export const routes: RouteConfig[] = [
         isPrivate: false,
     },
     {
+        path: '/resend-verification',
+        component: lazy(() => import('../pages/ResendVerification')),
+        isPrivate: false,
+    },
+    {
         path: '/home',
         component: lazy(() => import('../pages/Home')),
         isPrivate: true,

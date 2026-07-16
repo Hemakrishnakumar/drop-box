@@ -65,7 +65,7 @@ function passwordStrength(password: string) {
 
 export default function Register() {
     const navigate = useNavigate();
-    const { register: registerUser, loading, error } = useAuth();
+    const { register: registerUser, loading, error, clearError } = useAuth();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -87,6 +87,7 @@ export default function Register() {
     const isBusy = loading || isSubmitting;
 
     useEffect(() => {
+        clearError();
         const root = document.getElementById('root');
 
         root?.classList.add('registration-page-root');
@@ -94,7 +95,7 @@ export default function Register() {
         return () => {
             root?.classList.remove('registration-page-root');
         };
-    }, []);
+    }, [clearError]);
 
     const onSubmit = useCallback(
         async ({ firstName, lastName, email, password: formPassword }: RegisterFormData) => {

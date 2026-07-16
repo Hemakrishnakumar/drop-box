@@ -15,8 +15,6 @@ const Verification: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [resendLoading, setResendLoading] = useState(false);
-    const [resendSuccess, setResendSuccess] = useState(false);
 
     const handleVerification = useCallback(async () => {
         if (!token) return;
@@ -54,23 +52,6 @@ const Verification: React.FC = () => {
 
         return () => window.clearTimeout(timeout);
     }, [navigate, success]);
-
-    const handleResendVerification = async () => {
-        if (!token) return;
-
-        try {
-            setResendLoading(true);
-            setResendSuccess(false);
-            await authService.resendVerification({ token });
-            setResendSuccess(true);
-        } catch (error: unknown) {
-            const apiError = error as { message?: string };
-
-            setError(apiError.message || 'Failed to send a new verification email.');
-        } finally {
-            setResendLoading(false);
-        }
-    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
@@ -121,18 +102,12 @@ const Verification: React.FC = () => {
                                     Go to Login
                                 </Button>
                                 <Button
-                                    onClick={handleResendVerification}
+                                    onClick={() => navigate('/resend-verification')}
                                     className="flex-1"
-                                    disabled={!token || resendLoading || resendSuccess}
                                 >
-                                    {resendLoading ? 'Sending...' : 'Send New Link'}
+                                    Request New Link
                                 </Button>
                             </div>
-                            {resendSuccess && (
-                                <p className="text-sm font-medium text-green-700">
-                                    A new verification email has been sent. Please check your inbox.
-                                </p>
-                            )}
                         </div>
                     )}
 
@@ -147,8 +122,8 @@ const Verification: React.FC = () => {
                                     The verification link is missing or invalid.
                                 </p>
                             </div>
-                            <Button onClick={() => navigate('/register')} className="w-full">
-                                Register Again
+                            <Button onClick={() => navigate('/resend-verification')} className="w-full">
+                                Request New Link
                             </Button>
                         </div>
                     )}

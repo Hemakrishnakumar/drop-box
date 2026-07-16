@@ -125,11 +125,7 @@ export class AuthService {
     }
 
     async resendVerificationEmail(dto: ResendVerificationEmailInput): Promise<void> {
-        const email = dto.email ?? this.getEmailFromVerificationToken(dto.token);
-
-        if (!email) {
-            throw new BadRequestException('Email or verification token is required.');
-        }
+        const email = dto.email;
 
         const user = await this.userRepository.findOne({
             where: {
@@ -261,28 +257,6 @@ export class AuthService {
         return payload;
     }
 
-    private getEmailFromVerificationToken(token?: string): string | undefined {
-        if (!token) {
-            return undefined;
-        }
-
-        const [payloadPart, signature] = token.split('.');
-
-        if (!payloadPart || !signature) {
-            throw new BadRequestException('Invalid verification token.');
-        }
-
-        const expectedSignature = createHmac('sha256', this.getTokenSecret())
-            .update(payloadPart)
-            .digest('base64url');
-
-        if (!this.isSignatureValid(signature, expectedSignature)) {
-            throw new BadRequestException('Invalid verification token.');
-        }
-
-        return this.parseEmailVerificationPayload(payloadPart).email;
-    }
-
     private parseEmailVerificationPayload(payloadPart: string): EmailVerificationTokenPayload {
         try {
             const payload = JSON.parse(
@@ -316,15 +290,5 @@ export class AuthService {
         }
 
         return timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
-    }
-
-    private getTokenSecret(): string {
-        const secret = this.appConfig.tokenSecret;
-
-        if (!secret) {
-            throw new Error('Email verification token secret is not configured.');
-        }
-
-        return secret;
     }
 }
