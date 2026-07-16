@@ -209,10 +209,10 @@ function iconFor(kind: ItemKind, className = 'h-5 w-5') {
 
 function visibilityStyle(visibility: FileItem['visibility']) {
     return visibility === 'Shared'
-        ? 'bg-blue-100 text-blue-700'
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300'
         : visibility === 'Public link'
-            ? 'bg-violet-100 text-violet-700'
-            : 'bg-slate-100 text-slate-600';
+            ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300'
+            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
 }
 
 export default function Files() {
@@ -224,9 +224,10 @@ export default function Files() {
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
     const [query, setQuery] = useState('');
 
-    const currentItems = useMemo(() => folderPath.length
-        ? (nestedItems[folderPath.at(-1)?.id ?? ''] ?? [])
-        : rootItems, [folderPath]);
+    const currentItems = useMemo(
+        () => (folderPath.length ? (nestedItems[folderPath.at(-1)?.id ?? ''] ?? []) : rootItems),
+        [folderPath],
+    );
     const visibleItems = useMemo(
         () =>
             currentItems.filter((item) => {
@@ -263,13 +264,7 @@ export default function Files() {
         <div className="flex h-screen flex-col overflow-hidden px-4 pb-5 pt-20 sm:px-6 lg:px-6 lg:pb-6 lg:pt-28">
             <section className="mb-5 flex shrink-0 flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0061ff]">
-                        Workspace
-                    </p>
                     <h1 className="mt-1 text-3xl font-bold tracking-[-0.03em]">My Files</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                        Organize, search and manage all your files.
-                    </p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -381,7 +376,7 @@ export default function Files() {
                 </div>
             </section>
 
-            <section className="min-h-0 flex-1 overflow-y-auto rounded-[28px] border border-white/80 bg-white/55 p-3 shadow-sm sm:p-4">
+            <section className="min-h-0 flex-1 overflow-hidden rounded-[28px] border border-white/80 bg-white/55 p-3 shadow-sm sm:p-4">
                 {visibleItems.length === 0 ? (
                     <div className="grid h-full min-h-64 place-items-center text-center">
                         <div>
@@ -409,123 +404,129 @@ export default function Files() {
                         </div>
                     </div>
                 ) : view === 'grid' ? (
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                        {visibleItems.map((item) => (
-                            <article
-                                key={item.id}
-                                onDoubleClick={() => openFolder(item)}
-                                className={`group relative cursor-pointer rounded-[22px] border p-4 transition duration-200 hover:-translate-y-1 hover:shadow-lg ${selected.includes(item.id) ? 'border-[#0061ff] bg-blue-50/70 ring-2 ring-blue-200' : 'border-white bg-white/90 hover:border-blue-100'}`}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSelection(item.id)}
-                                    className={`absolute left-3 top-3 grid h-5 w-5 place-items-center rounded-md border transition ${selected.includes(item.id) ? 'border-[#0061ff] bg-[#0061ff] text-white' : 'border-slate-300 bg-white text-transparent group-hover:text-slate-300'}`}
+                    <div className="h-full overflow-y-auto">
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                            {visibleItems.map((item) => (
+                                <article
+                                    key={item.id}
+                                    onDoubleClick={() => openFolder(item)}
+                                    className={`group relative cursor-pointer rounded-[22px] border p-4 transition duration-200 hover:-translate-y-1 hover:shadow-lg ${selected.includes(item.id) ? 'border-[#0061ff] bg-blue-50/70 ring-2 ring-blue-200' : 'border-white bg-white/90 hover:border-blue-100'}`}
                                 >
-                                    <Check className="h-3.5 w-3.5" />
-                                </button>
-                                <div
-                                    className={`grid h-24 place-items-center rounded-2xl ${item.kind === 'folder' ? 'bg-blue-50 text-[#0061ff]' : item.kind === 'image' ? 'bg-violet-50 text-violet-600' : 'bg-slate-100 text-slate-600'}`}
-                                >
-                                    {iconFor(item.kind, 'h-10 w-10')}
-                                </div>
-                                <div className="mt-3 flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                        <h3 className="truncate text-sm font-bold">{item.name}</h3>
-                                        <p className="mt-1 text-xs text-slate-500">
-                                            {item.meta} · {item.modified}
-                                        </p>
-                                    </div>
                                     <button
                                         type="button"
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            setMenuOpen(menuOpen === item.id ? null : item.id);
-                                        }}
-                                        className="rounded-lg p-1.5 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100"
+                                        onClick={() => toggleSelection(item.id)}
+                                        className={`absolute left-3 top-3 grid h-5 w-5 place-items-center rounded-md border transition ${selected.includes(item.id) ? 'border-[#0061ff] bg-[#0061ff] text-white' : 'border-slate-300 bg-white text-transparent group-hover:text-slate-300'}`}
                                     >
-                                        <MoreHorizontal className="h-4 w-4" />
+                                        <Check className="h-3.5 w-3.5" />
                                     </button>
-                                </div>
-                                <div className="mt-3 flex items-center justify-between">
-                                    <span
-                                        className={`rounded-full px-2 py-1 text-[10px] font-bold ${visibilityStyle(item.visibility)}`}
+                                    <div
+                                        className={`grid h-24 place-items-center rounded-2xl ${item.kind === 'folder' ? 'bg-blue-50 text-[#0061ff] dark:bg-[#10264b] dark:text-blue-400' : item.kind === 'image' ? 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
                                     >
-                                        {item.visibility}
-                                    </span>
-                                    {item.favorite && (
-                                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                    )}
-                                </div>
-                                {menuOpen === item.id && (
-                                    <ActionMenu onPreview={() => setPreview(item)} />
-                                )}
-                            </article>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="min-w-[780px]">
-                        <div className="sticky top-0 grid grid-cols-[32px_minmax(220px,2fr)_0.8fr_0.9fr_0.9fr_0.7fr_0.7fr_32px] items-center border-b border-slate-200 bg-[#f8f9ff]/95 px-2 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 backdrop-blur">
-                            <span />
-                            <span>Name</span>
-                            <span>Type</span>
-                            <span>Created</span>
-                            <span>Modified</span>
-                            <span>Size</span>
-                            <span>Visibility</span>
-                            <span />
-                        </div>
-                        {visibleItems.map((item) => (
-                            <div
-                                key={item.id}
-                                onDoubleClick={() => openFolder(item)}
-                                className={`group grid grid-cols-[32px_minmax(220px,2fr)_0.8fr_0.9fr_0.9fr_0.7fr_0.7fr_32px] items-center border-b border-slate-100 px-2 py-3 text-sm transition hover:bg-blue-50/60 ${selected.includes(item.id) ? 'bg-blue-50' : ''}`}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSelection(item.id)}
-                                    className={`grid h-5 w-5 place-items-center rounded-md border ${selected.includes(item.id) ? 'border-[#0061ff] bg-[#0061ff] text-white' : 'border-slate-300 bg-white text-transparent'}`}
-                                >
-                                    <Check className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openFolder(item)}
-                                    className="flex min-w-0 items-center gap-3 text-left"
-                                >
-                                    <span
-                                        className={`rounded-xl p-2 ${item.kind === 'folder' ? 'bg-blue-50 text-[#0061ff]' : 'bg-slate-100 text-slate-600'}`}
-                                    >
-                                        {iconFor(item.kind)}
-                                    </span>
-                                    <span className="truncate font-semibold">{item.name}</span>
-                                </button>
-                                <span className="text-xs text-slate-500">{item.meta}</span>
-                                <span className="text-xs text-slate-500">{item.created}</span>
-                                <span className="text-xs text-slate-500">{item.modified}</span>
-                                <span className="font-mono text-xs text-slate-500">
-                                    {item.size}
-                                </span>
-                                <span>
-                                    <span
-                                        className={`rounded-full px-2 py-1 text-[10px] font-bold ${visibilityStyle(item.visibility)}`}
-                                    >
-                                        {item.visibility}
-                                    </span>
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setMenuOpen(menuOpen === item.id ? null : item.id)
-                                    }
-                                    className="relative rounded-lg p-1.5 text-slate-400 hover:bg-white"
-                                >
-                                    <MoreHorizontal className="h-4 w-4" />
+                                        {iconFor(item.kind, 'h-10 w-10')}
+                                    </div>
+                                    <div className="mt-3 flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <h3 className="truncate text-sm font-bold">
+                                                {item.name}
+                                            </h3>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                {item.meta} · {item.modified}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                setMenuOpen(menuOpen === item.id ? null : item.id);
+                                            }}
+                                            className="rounded-lg p-1.5 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100"
+                                        >
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between">
+                                        <span
+                                            className={`rounded-full px-2 py-1 text-[10px] font-bold ${visibilityStyle(item.visibility)}`}
+                                        >
+                                            {item.visibility}
+                                        </span>
+                                        {item.favorite && (
+                                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                        )}
+                                    </div>
                                     {menuOpen === item.id && (
                                         <ActionMenu onPreview={() => setPreview(item)} />
                                     )}
-                                </button>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="h-full overflow-auto">
+                        <div className="min-w-[780px]">
+                            <div className="sticky top-0 z-20 grid grid-cols-[32px_minmax(220px,2fr)_0.8fr_0.9fr_0.9fr_0.7fr_0.7fr_32px] items-center border-b border-slate-200 bg-[#f8f9ff] px-2 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 shadow-sm">
+                                <span />
+                                <span>Name</span>
+                                <span>Type</span>
+                                <span>Created</span>
+                                <span>Modified</span>
+                                <span>Size</span>
+                                <span>Visibility</span>
+                                <span />
                             </div>
-                        ))}
+                            {visibleItems.map((item) => (
+                                <div
+                                    key={item.id}
+                                    onDoubleClick={() => openFolder(item)}
+                                    className={`group grid grid-cols-[32px_minmax(220px,2fr)_0.8fr_0.9fr_0.9fr_0.7fr_0.7fr_32px] items-center border-b border-slate-100 px-2 py-3 text-sm transition hover:bg-blue-50/60 ${selected.includes(item.id) ? 'bg-blue-50' : ''}`}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSelection(item.id)}
+                                        className={`grid h-5 w-5 place-items-center rounded-md border ${selected.includes(item.id) ? 'border-[#0061ff] bg-[#0061ff] text-white' : 'border-slate-300 bg-white text-transparent'}`}
+                                    >
+                                        <Check className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => openFolder(item)}
+                                        className="flex min-w-0 items-center gap-3 text-left"
+                                    >
+                                        <span
+                                            className={`rounded-xl p-2 ${item.kind === 'folder' ? 'bg-blue-50 text-[#0061ff] dark:bg-[#10264b] dark:text-blue-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                                        >
+                                            {iconFor(item.kind)}
+                                        </span>
+                                        <span className="truncate font-semibold">{item.name}</span>
+                                    </button>
+                                    <span className="text-xs text-slate-500">{item.meta}</span>
+                                    <span className="text-xs text-slate-500">{item.created}</span>
+                                    <span className="text-xs text-slate-500">{item.modified}</span>
+                                    <span className="font-mono text-xs text-slate-500">
+                                        {item.size}
+                                    </span>
+                                    <span>
+                                        <span
+                                            className={`rounded-full px-2 py-1 text-[10px] font-bold ${visibilityStyle(item.visibility)}`}
+                                        >
+                                            {item.visibility}
+                                        </span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setMenuOpen(menuOpen === item.id ? null : item.id)
+                                        }
+                                        className="relative rounded-lg p-1.5 text-slate-400 hover:bg-white"
+                                    >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        {menuOpen === item.id && (
+                                            <ActionMenu onPreview={() => setPreview(item)} />
+                                        )}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </section>

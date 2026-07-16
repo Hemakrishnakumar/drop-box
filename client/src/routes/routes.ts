@@ -38,7 +38,7 @@ export const routes: RouteConfig[] = [
         children: [
             {
                 path: '',
-                component: lazy(() => import('../components/Dashboard')),
+                component: lazy(() => import('../pages/Dashboard')),
                 isPrivate: true,
             },
             {

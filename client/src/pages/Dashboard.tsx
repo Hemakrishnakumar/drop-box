@@ -9,14 +9,14 @@ const metrics = [
         value: '12,482',
         change: '12%',
         icon: FileText,
-        tone: 'bg-blue-100 text-blue-700',
+        tone: 'bg-blue-100 text-blue-700 dark:bg-[#16243a] dark:text-[#7595bb]',
     },
     {
         label: 'Folders',
         value: '842',
         change: '4%',
         icon: Folder,
-        tone: 'bg-violet-100 text-violet-700',
+        tone: 'bg-violet-100 text-violet-700 dark:bg-[#211a3b] dark:text-[#9586ba]',
     },
     {
         label: 'Storage used',
@@ -24,14 +24,14 @@ const metrics = [
         suffix: 'GB',
         change: '72%',
         icon: HardDrive,
-        tone: 'bg-emerald-100 text-emerald-700',
+        tone: 'bg-emerald-100 text-emerald-700 dark:bg-[#132c2b] dark:text-[#75aaa4]',
     },
     {
         label: 'Shared items',
         value: '1,104',
         change: '24%',
         icon: Share2,
-        tone: 'bg-slate-200 text-slate-700',
+        tone: 'bg-slate-200 text-slate-700 dark:bg-[#1c293b] dark:text-[#91a0b5]',
     },
 ];
 
@@ -42,7 +42,7 @@ const recentFiles = [
         modified: '2 minutes ago',
         size: '4.2 MB',
         icon: FileText,
-        tone: 'bg-blue-50 text-blue-600',
+        tone: 'bg-blue-50 text-blue-600 dark:bg-[#16243a] dark:text-[#7595bb]',
     },
     {
         name: 'Campaign Hero Image',
@@ -50,7 +50,7 @@ const recentFiles = [
         modified: '1 hour ago',
         size: '12.8 MB',
         icon: Image,
-        tone: 'bg-violet-50 text-violet-600',
+        tone: 'bg-violet-50 text-violet-600 dark:bg-[#211a3b] dark:text-[#9586ba]',
     },
     {
         name: 'Interview_Draft_Final',
@@ -58,7 +58,7 @@ const recentFiles = [
         modified: '3 hours ago',
         size: '245.0 MB',
         icon: Video,
-        tone: 'bg-emerald-50 text-emerald-600',
+        tone: 'bg-emerald-50 text-emerald-600 dark:bg-[#132c2b] dark:text-[#75aaa4]',
         private: true,
     },
 ];
@@ -70,9 +70,6 @@ export default function Dashboard() {
     return (
         <div className="w-full space-y-6 px-4 pb-6 pt-20 sm:px-6 lg:px-6 lg:pb-8 lg:pt-28">
             <section>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0061ff]">
-                    Dashboard overview
-                </p>
                 <h1 className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#0b1c30] sm:text-3xl">
                     Good to see you, {name}.
                 </h1>
@@ -89,7 +86,7 @@ export default function Dashboard() {
                                 <Icon className="h-5 w-5" />
                             </span>
                             <span
-                                className={`rounded-lg px-2 py-1 text-xs font-semibold ${label === 'Storage used' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}
+                                className={`rounded-lg px-2 py-1 text-xs font-semibold ${label === 'Storage used' ? 'bg-red-50 text-red-600 dark:bg-red-950/35 dark:text-red-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-400'}`}
                             >
                                 {label === 'Storage used' ? change : `↑ ${change}`}
                             </span>
@@ -140,7 +137,7 @@ export default function Dashboard() {
                                     }) => (
                                         <tr
                                             key={fileName}
-                                            className="border-b border-slate-100 last:border-0 hover:bg-blue-50/50"
+                                            className="border-b border-slate-100 last:border-0 hover:bg-blue-50/50 dark:border-slate-700/70 dark:hover:bg-slate-800/50"
                                         >
                                             <td className="px-2 py-4">
                                                 <div className="flex items-center gap-3">
@@ -165,13 +162,13 @@ export default function Dashboard() {
                                             </td>
                                             <td className="px-2 py-4">
                                                 {isPrivate ? (
-                                                    <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
+                                                    <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                                                         PRIVATE
                                                     </span>
                                                 ) : (
                                                     <div className="flex -space-x-2">
-                                                        <span className="h-7 w-7 rounded-full border-2 border-white bg-blue-200" />
-                                                        <span className="h-7 w-7 rounded-full border-2 border-white bg-violet-200" />
+                                                        <span className="h-7 w-7 rounded-full border-2 border-white bg-blue-200 dark:bg-blue-900" />
+                                                        <span className="h-7 w-7 rounded-full border-2 border-white bg-violet-200 dark:bg-violet-900" />
                                                     </div>
                                                 )}
                                             </td>
@@ -204,7 +201,7 @@ export default function Dashboard() {
                                 <MoreHorizontal className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#073f9e] via-[#0052dc] to-[#287dff] p-4 text-white shadow-lg shadow-blue-500/20">
+                        <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#073f9e] via-[#0052dc] to-[#287dff] p-4 text-white shadow-lg shadow-blue-500/20 dark:from-[#142136] dark:via-[#182b47] dark:to-[#1b3659] dark:shadow-none">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="text-xs font-medium text-blue-100">
@@ -221,19 +218,19 @@ export default function Dashboard() {
                                     72% used
                                 </span>
                             </div>
-                            <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-white/25">
-                                <span className="w-[28%] bg-white" />
-                                <span className="w-[32%] bg-[#b9d4ff]" />
-                                <span className="w-[12%] bg-[#77aafc]" />
+                            <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-white/25 dark:bg-black/30">
+                                <span className="w-[28%] bg-white dark:bg-[#9cb4d0]" />
+                                <span className="w-[32%] bg-[#b9d4ff] dark:bg-[#54749d]" />
+                                <span className="w-[12%] bg-[#77aafc] dark:bg-[#304e71]" />
                             </div>
                             <p className="mt-2 text-xs text-blue-100">
                                 27.6 GB available of 100 GB
                             </p>
                         </div>
                         {[
-                            ['Documents', '28.4 GB', 'bg-[#0061ff]'],
-                            ['Images & video', '32.1 GB', 'bg-[#8b5cf6]'],
-                            ['Other files', '11.9 GB', 'bg-[#14b87a]'],
+                            ['Documents', '28.4 GB', 'bg-[#0061ff] dark:bg-blue-500'],
+                            ['Images & video', '32.1 GB', 'bg-[#8b5cf6] dark:bg-violet-500'],
+                            ['Other files', '11.9 GB', 'bg-[#14b87a] dark:bg-emerald-500'],
                         ].map(([type, amount, tone]) => (
                             <div key={type} className="mt-3 flex items-center gap-3">
                                 <span className={`h-2.5 w-2.5 rounded-full ${tone}`} />
@@ -255,20 +252,26 @@ export default function Dashboard() {
                                     'You uploaded ',
                                     '8 files',
                                     ' to “Project Atlas”',
-                                    'bg-[#0061ff]',
+                                    'bg-[#0061ff] dark:bg-blue-500',
                                 ],
                                 [
                                     'Yesterday',
                                     '',
                                     'Sarah',
                                     ' invited you to a shared folder',
-                                    'bg-[#712ae2]',
+                                    'bg-[#712ae2] dark:bg-violet-500',
                                 ],
-                                ['Oct 24', 'Storage limit alert: ', '72% used', '', 'bg-[#006443]'],
+                                [
+                                    'Oct 24',
+                                    'Storage limit alert: ',
+                                    '72% used',
+                                    '',
+                                    'bg-[#006443] dark:bg-emerald-500',
+                                ],
                             ].map(([time, before, bold, after, tone]) => (
                                 <div key={time} className="relative">
                                     <span
-                                        className={`absolute -left-[30px] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-white ${tone}`}
+                                        className={`absolute -left-[30px] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-white dark:ring-[#111b2e] ${tone}`}
                                     />
                                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                         {time}
