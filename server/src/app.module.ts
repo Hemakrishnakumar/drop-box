@@ -13,6 +13,8 @@ import { RedisModule } from './redis/redis.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'node:path';
+import { APP_GUARD } from '@nestjs/core';
+import { SessionGuard } from './common/guards/session.guard';
 
 type RedisConfig = ConfigType<typeof redisConfig>;
 
@@ -27,6 +29,7 @@ type RedisConfig = ConfigType<typeof redisConfig>;
         GraphQLModule.forRoot<ApolloDriverConfig>({
             driver: ApolloDriver,
             path: '/graphql',
+            context: ({ req, res }) => ({ req, res }),
             autoSchemaFile: join(process.cwd(), 'schema.gql'),
             sortSchema: true,
             introspection: true,
@@ -48,6 +51,11 @@ type RedisConfig = ConfigType<typeof redisConfig>;
         RedisModule,
     ],
     controllers: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: SessionGuard,
+        },
+    ],
 })
 export class AppModule {}

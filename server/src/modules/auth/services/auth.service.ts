@@ -22,6 +22,9 @@ import { VerifyEmailInput } from '../inputs/verify-email.input';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ResendVerificationEmailInput } from '../inputs/resend-verification-email.input';
 import { LoginInput } from '../inputs/login.input';
+import type { GraphqlContext } from 'src/common/types/common';
+import { SessionService } from './session.service';
+import { LoggedInUserOutput, LoginOutput } from '../outputs/login.output';
 
 type AppConfig = ConfigType<typeof appConfig>;
 
@@ -42,6 +45,7 @@ export class AuthService {
         private readonly dataSource: DataSource,
         @InjectQueue(BULLMQ_QUEUES.AUTH)
         private queue: Queue,
+        private sessionService: SessionService,
     ) {}
 
     async register(registerInput: RegisterInput): Promise<void> {
@@ -159,11 +163,22 @@ export class AuthService {
         );
     }
 
-    async login(dto: LoginInput): Promise<void> {
+    async login(dto: LoginInput, context: GraphqlContext): Promise<LoginOutput> {
         const { email, password } = dto;
+        const { req, res } = context;
         const user = await this.userRepository.findOne({
             where: {
                 email,
+            },
+            select: {
+                id: true,
+                email: true,
+                password: true,
+                emailVerified: true,
+                firstName: true,
+                lastName: true,
+                profilePhoto: true,
+                storageUsed: true,
             },
         });
         if (!user || !user?.password || !(await argon2.verify(user.password, password))) {
@@ -172,12 +187,48 @@ export class AuthService {
         if (!user.emailVerified) {
             throw new BadRequestException('Email is not yet verified, Please verify email');
         }
-        // const session = this.createSession(user.id);
+        const session = await this.sessionService.create(user.id, {
+            ipAddress: req.ip ?? req.socket.remoteAddress ?? 'unknown',
+            userAgent: req.get('user-agent') ?? 'unknown',
+        });
+
+        res.cookie('sessionId', session.id, {
+            httpOnly: true,
+            secure: this.appConfig.env === 'production',
+            sameSite: this.appConfig.env === 'production' ? 'none' : 'lax',
+            expires: session.expiresAt,
+            path: '/',
+        });
+
+        return {
+            success: true,
+            user: {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                photo: user.profilePhoto,
+                storageUsed: String(user.storageUsed),
+            },
+        };
     }
 
-    // private createSession(id: string) {
-    //     //implement session creation
-    // }
+    async profile(userId: string): Promise<LoggedInUserOutput> {
+        const user = await this.userRepository.findOne({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('Session is invalid.');
+        }
+
+        return {
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.profilePhoto,
+            storageUsed: String(user.storageUsed),
+        };
+    }
 
     private verifyEmailVerificationToken(token: string): EmailVerificationTokenPayload {
         const secret = this.appConfig.tokenSecret;

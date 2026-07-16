@@ -8,15 +8,19 @@ import { BULLMQ_QUEUES } from './constants/queue.constants';
 import { EmailModule } from '../email/email.module';
 import { AuthProcessor } from './processors/auth.processor';
 import { AuthResolver } from './auth.resolver';
+import { RedisModule } from 'src/redis/redis.module';
+import { SessionService } from './services/session.service';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([User, Folder]),
         EmailModule,
+        RedisModule,
         BullModule.registerQueue({
             name: BULLMQ_QUEUES.AUTH,
         }),
     ],
-    providers: [AuthService, AuthProcessor, AuthResolver],
+    providers: [AuthService, AuthProcessor, AuthResolver, SessionService],
+    exports: [SessionService],
 })
 export class AuthModule {}
