@@ -94,7 +94,7 @@ export default function Login() {
                     email,
                     password,
                 });
-                navigate('/home');
+                navigate('/');
             } catch {
                 // error is set inside AuthContext
             }

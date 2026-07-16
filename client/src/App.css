@@ -6,7 +6,8 @@
 }
 
 #root.registration-page-root,
-#root.login-page-root {
+#root.login-page-root,
+#root.home-page-root {
     max-width: none;
     width: 100%;
     padding: 0;
