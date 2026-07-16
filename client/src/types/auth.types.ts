@@ -1,5 +1,6 @@
 import type {
     LoginMutationVariables,
+    GoogleSignInMutationVariables,
     RegisterMutationVariables,
     ResendVerificationMutationVariables,
     UserFieldsFragment,
@@ -9,6 +10,7 @@ import type {
 
 
 export type LoginPayload = LoginMutationVariables;
+export type GoogleSignInPayload = GoogleSignInMutationVariables;
 export type RegisterPayload = RegisterMutationVariables;
 export type VerifyEmailPayload = VerifyEmailMutationVariables;
 export type ResendVerificationPayload = ResendVerificationMutationVariables;
@@ -21,6 +23,7 @@ export interface AuthContextValue {
     error: string | null;
     clearError: () => void;
     login: (payload: LoginPayload) => Promise<void>;
+    googleSignIn: (payload: GoogleSignInPayload) => Promise<void>;
     logout: () => Promise<void>;
     register: (payload: RegisterPayload) => Promise<void>;
     refetchUser: () => Promise<void>;

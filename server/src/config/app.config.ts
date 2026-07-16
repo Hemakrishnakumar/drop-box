@@ -7,4 +7,5 @@ export default registerAs('app', () => ({
     enableEmailVerification: process.env.ENABLE_EMAIL_VERIFICATION === 'true',
     tokenSecret: process.env.EMAIL_VERIFICATION_TOKEN_SECRET,
     sessionExpirationInHours: Number(process.env.SESSION_EXPIRATION_IN_HOURS),
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
 }));

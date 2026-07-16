@@ -33,6 +33,18 @@ export const LOGOUT = gql`
     }
 `;
 
+export const GOOGLE_SIGN_IN = gql`
+    mutation GoogleSignIn($token: String!) {
+        googleSignIn(token: $token) {
+            success
+            user {
+                ...UserFields
+            }
+        }
+    }
+    ${USER_FIELDS}
+`;
+
 export const REGISTER = gql`
     mutation Register(
         $email: String!

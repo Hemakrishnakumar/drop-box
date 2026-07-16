@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { authService } from '@/services';
-import type { AuthUser, LoginPayload, RegisterPayload } from '@/types';
+import type { AuthUser, GoogleSignInPayload, LoginPayload, RegisterPayload } from '@/types';
 import { AuthContext } from './index';
 
 
@@ -50,6 +50,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
     }, []);
 
+    const googleSignIn = useCallback(async (payload: GoogleSignInPayload) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { user: authenticatedUser } = await authService.googleSignIn(payload);
+            setUser(authenticatedUser);
+        } catch (err: unknown) {
+            const message =
+                (err as { message?: string }).message ?? 'Google sign-in failed. Please try again.';
+            setError(message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     const register = useCallback(async (payload: RegisterPayload) => {
         setLoading(true);
         setError(null);
@@ -75,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 error,
                 clearError,
                 login,
+                googleSignIn,
                 logout,
                 register,
                 refetchUser,

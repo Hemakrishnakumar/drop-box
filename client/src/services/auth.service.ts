@@ -1,6 +1,8 @@
 import type {
     LoginMutation,
     LoginMutationVariables,
+    GoogleSignInMutation,
+    GoogleSignInMutationVariables,
     ProfileQuery,
     RegisterMutationVariables,
     ResendVerificationMutationVariables,
@@ -8,6 +10,7 @@ import type {
 } from '@/graphql/generated/graphql';
 import {
     LoginDocument,
+    GoogleSignInDocument,
     LogoutDocument,
     ProfileDocument,
     RegisterDocument,
@@ -18,6 +21,7 @@ import { graphqlClient } from '@/graphql/client';
 import type {
     AuthUser,
     LoginPayload,
+    GoogleSignInPayload,
     RegisterPayload,
     ResendVerificationPayload,
     VerifyEmailPayload,
@@ -47,6 +51,31 @@ export const authService = {
         }
 
         return data.login;
+    },
+
+    async googleSignIn(
+        payload: GoogleSignInPayload,
+    ): Promise<NonNullable<GoogleSignInMutation['googleSignIn']>> {
+        const { data } = await graphqlClient.mutate({
+            mutation: GoogleSignInDocument,
+            variables: payload satisfies GoogleSignInMutationVariables,
+            update(cache, result) {
+                const user = result.data?.googleSignIn.user;
+
+                if (user) {
+                    cache.writeQuery({
+                        query: ProfileDocument,
+                        data: { profile: user },
+                    });
+                }
+            },
+        });
+
+        if (!data?.googleSignIn.success) {
+            throw new Error('Google sign-in failed. Please try again.');
+        }
+
+        return data.googleSignIn;
     },
 
     async logout(): Promise<void> {

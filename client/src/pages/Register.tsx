@@ -18,6 +18,7 @@ import {
 
 import { DataModal } from '@/components/modals';
 import { Button } from '@/components/ui/button';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { cn } from '@/lib/utils';
 import { registerSchema, type RegisterFormData } from '@/validations/authValidation';
 import { useAuth } from '@/context';
@@ -162,14 +163,18 @@ export default function Register() {
                                     <div className="rounded bg-[#5d789d] px-3 py-1 text-center font-semibold text-white">
                                         + New
                                     </div>
-                                    {['All Files', 'Recent', 'Shared with me', 'Favorites', 'Trash'].map(
-                                        (item) => (
-                                            <div key={item} className="flex items-center gap-1">
-                                                <span className="h-2 w-2 rounded-sm border border-[#aab6c5]" />
-                                                {item}
-                                            </div>
-                                        ),
-                                    )}
+                                    {[
+                                        'All Files',
+                                        'Recent',
+                                        'Shared with me',
+                                        'Favorites',
+                                        'Trash',
+                                    ].map((item) => (
+                                        <div key={item} className="flex items-center gap-1">
+                                            <span className="h-2 w-2 rounded-sm border border-[#aab6c5]" />
+                                            {item}
+                                        </div>
+                                    ))}
                                 </aside>
                                 <div className="bg-white">
                                     <div className="grid grid-cols-[1.35fr_0.7fr_1fr_0.7fr] border-b border-[#e6ebf2] px-3 py-2 font-semibold">
@@ -214,6 +219,16 @@ export default function Register() {
                                 {error}
                             </div>
                         )}
+
+                        <GoogleSignInButton mode="signup" />
+
+                        <div className="my-4 flex items-center gap-4">
+                            <div className="h-px flex-1 bg-[#d9e0eb]" />
+                            <span className="text-xs font-bold uppercase tracking-wide text-[#52617a]">
+                                Or sign up with email
+                            </span>
+                            <div className="h-px flex-1 bg-[#d9e0eb]" />
+                        </div>
 
                         <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
                             <div className="grid gap-3.5 sm:grid-cols-2">
@@ -389,7 +404,9 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(
                 />
                 {rightElement}
             </span>
-            {error && <span className="mt-0.5 block text-xs font-medium text-red-600">{error}</span>}
+            {error && (
+                <span className="mt-0.5 block text-xs font-medium text-red-600">{error}</span>
+            )}
         </label>
     ),
 );

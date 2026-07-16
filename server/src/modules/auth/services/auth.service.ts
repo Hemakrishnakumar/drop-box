@@ -22,9 +22,11 @@ import { VerifyEmailInput } from '../inputs/verify-email.input';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ResendVerificationEmailInput } from '../inputs/resend-verification-email.input';
 import { LoginInput } from '../inputs/login.input';
+import { GoogleSignInInput } from '../inputs/google-sign-in.input';
 import type { GraphqlContext } from 'src/common/types/common';
 import { SessionService } from './session.service';
 import { LoggedInUserOutput, LoginOutput } from '../outputs/login.output';
+import { GoogleIdTokenService } from './google-id-token.service';
 
 type AppConfig = ConfigType<typeof appConfig>;
 
@@ -32,6 +34,16 @@ interface EmailVerificationTokenPayload {
     email: string;
     type: 'email-verification';
     exp: number;
+}
+
+interface CreateUserWithRootFolderInput {
+    email: string;
+    firstName: string;
+    lastName: string;
+    emailVerified: boolean;
+    status: UserStatus;
+    password?: string;
+    profilePhoto?: string;
 }
 
 @Injectable()
@@ -46,6 +58,7 @@ export class AuthService {
         @InjectQueue(BULLMQ_QUEUES.AUTH)
         private queue: Queue,
         private sessionService: SessionService,
+        private readonly googleIdTokenService: GoogleIdTokenService,
     ) {}
 
     async register(registerInput: RegisterInput): Promise<void> {
@@ -63,27 +76,13 @@ export class AuthService {
         const hashedPassword = await argon2.hash(password);
         const shouldVerifyEmail: boolean = this.appConfig.enableEmailVerification;
 
-        await this.dataSource.transaction(async (manager) => {
-            const userRepository = manager.getRepository(User);
-            const folderRepository = manager.getRepository(Folder);
-
-            const user = await userRepository.save({
-                firstName,
-                lastName,
-                email,
-                password: hashedPassword,
-                emailVerified: !shouldVerifyEmail,
-                status: shouldVerifyEmail ? UserStatus.PENDING_VERIFICATION : UserStatus.ACTIVE,
-            });
-
-            const rootFolder = await folderRepository.save({
-                name: '/',
-                owner: user,
-            });
-
-            user.rootFolder = rootFolder;
-
-            await userRepository.save(user);
+        await this.createUserWithRootFolder({
+            email,
+            firstName,
+            lastName,
+            password: hashedPassword,
+            emailVerified: !shouldVerifyEmail,
+            status: shouldVerifyEmail ? UserStatus.PENDING_VERIFICATION : UserStatus.ACTIVE,
         });
         if (shouldVerifyEmail) {
             await this.queue.add(
@@ -161,7 +160,6 @@ export class AuthService {
 
     async login(dto: LoginInput, context: GraphqlContext): Promise<LoginOutput> {
         const { email, password } = dto;
-        const { req, res } = context;
         const user = await this.userRepository.findOne({
             where: {
                 email,
@@ -183,29 +181,42 @@ export class AuthService {
         if (!user.emailVerified) {
             throw new BadRequestException('Email is not yet verified, Please verify email');
         }
-        const session = await this.sessionService.create(user.id, {
-            ipAddress: req.ip ?? req.socket.remoteAddress ?? 'unknown',
-            userAgent: req.get('user-agent') ?? 'unknown',
+        return this.createLoginSession(user, context);
+    }
+
+    async googleSignIn(dto: GoogleSignInInput, context: GraphqlContext): Promise<LoginOutput> {
+        const googleUser = await this.googleIdTokenService.verify(dto.token);
+        let user = await this.userRepository.findOne({
+            where: { email: googleUser.email },
         });
 
-        res.cookie('sessionId', session.id, {
-            httpOnly: true,
-            secure: this.appConfig.env === 'production',
-            sameSite: this.appConfig.env === 'production' ? 'none' : 'lax',
-            expires: session.expiresAt,
-            path: '/',
-        });
+        if (!user) {
+            user = await this.createUserWithRootFolder({
+                email: googleUser.email,
+                firstName: googleUser.firstName,
+                lastName: googleUser.lastName,
+                profilePhoto: googleUser.photo,
+                emailVerified: true,
+                status: UserStatus.ACTIVE,
+            });
+        } else {
+            let shouldSave = false;
 
-        return {
-            success: true,
-            user: {
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                photo: user.profilePhoto,
-                storageUsed: String(user.storageUsed),
-            },
-        };
+            if (!user.emailVerified || user.status !== UserStatus.ACTIVE) {
+                user.emailVerified = true;
+                user.status = UserStatus.ACTIVE;
+                shouldSave = true;
+            }
+            if (!user.profilePhoto && googleUser.photo) {
+                user.profilePhoto = googleUser.photo;
+                shouldSave = true;
+            }
+            if (shouldSave) {
+                user = await this.userRepository.save(user);
+            }
+        }
+
+        return this.createLoginSession(user, context);
     }
 
     async logout(context: GraphqlContext): Promise<void> {
@@ -239,6 +250,45 @@ export class AuthService {
             photo: user.profilePhoto,
             storageUsed: String(user.storageUsed),
         };
+    }
+
+    private async createLoginSession(user: User, context: GraphqlContext): Promise<LoginOutput> {
+        const { req, res } = context;
+        const session = await this.sessionService.create(user.id, {
+            ipAddress: req.ip ?? req.socket.remoteAddress ?? 'unknown',
+            userAgent: req.get('user-agent') ?? 'unknown',
+        });
+
+        res.cookie('sessionId', session.id, {
+            httpOnly: true,
+            secure: this.appConfig.env === 'production',
+            sameSite: this.appConfig.env === 'production' ? 'none' : 'lax',
+            expires: session.expiresAt,
+            path: '/',
+        });
+
+        return {
+            success: true,
+            user: {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                photo: user.profilePhoto,
+                storageUsed: String(user.storageUsed),
+            },
+        };
+    }
+
+    private async createUserWithRootFolder(input: CreateUserWithRootFolderInput): Promise<User> {
+        return this.dataSource.transaction(async (manager) => {
+            const userRepository = manager.getRepository(User);
+            const folderRepository = manager.getRepository(Folder);
+            const user = await userRepository.save(input);
+            const rootFolder = await folderRepository.save({ name: '/', owner: user });
+
+            user.rootFolder = rootFolder;
+            return userRepository.save(user);
+        });
     }
 
     private verifyEmailVerificationToken(token: string): EmailVerificationTokenPayload {

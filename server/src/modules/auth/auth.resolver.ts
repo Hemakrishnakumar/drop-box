@@ -4,6 +4,7 @@ import { LoginInput } from './inputs/login.input';
 import { RegisterInput } from './inputs/register.input';
 import { ResendVerificationEmailInput } from './inputs/resend-verification-email.input';
 import { VerifyEmailInput } from './inputs/verify-email.input';
+import { GoogleSignInInput } from './inputs/google-sign-in.input';
 import { AuthMessageOutput } from './outputs/auth-message.output';
 import { AuthService } from './services/auth.service';
 import { LoggedInUserOutput, LoginOutput } from './outputs/login.output';
@@ -50,6 +51,15 @@ export class AuthResolver {
         @Context() { req, res }: GraphqlContext,
     ): Promise<LoginOutput> {
         return this.authService.login(input, { req, res });
+    }
+
+    @Mutation(() => LoginOutput)
+    @Public()
+    async googleSignIn(
+        @Args() input: GoogleSignInInput,
+        @Context() { req, res }: GraphqlContext,
+    ): Promise<LoginOutput> {
+        return this.authService.googleSignIn(input, { req, res });
     }
 
     @Mutation(() => AuthMessageOutput)

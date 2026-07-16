@@ -10,6 +10,7 @@ import { AuthProcessor } from './processors/auth.processor';
 import { AuthResolver } from './auth.resolver';
 import { RedisModule } from 'src/redis/redis.module';
 import { SessionService } from './services/session.service';
+import { GoogleIdTokenService } from './services/google-id-token.service';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { SessionService } from './services/session.service';
             name: BULLMQ_QUEUES.AUTH,
         }),
     ],
-    providers: [AuthService, AuthProcessor, AuthResolver, SessionService],
+    providers: [AuthService, AuthProcessor, AuthResolver, SessionService, GoogleIdTokenService],
     exports: [SessionService],
 })
 export class AuthModule {}
