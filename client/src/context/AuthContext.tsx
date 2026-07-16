@@ -3,8 +3,6 @@ import { authService } from '@/services';
 import type { AuthUser, LoginPayload, RegisterPayload } from '@/types';
 import { AuthContext } from './index';
 
-
-
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -35,12 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { user: authenticatedUser } = await authService.login(payload);
             setUser(authenticatedUser);
         } catch (err: unknown) {
-            const message = (err as { message?: string }).message ?? 'Login failed. Please try again.';
+            const message =
+                (err as { message?: string }).message ?? 'Login failed. Please try again.';
             setError(message);
             throw err;
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    const logout = useCallback(async () => {
+        await authService.logout();
+        setUser(null);
+        setError(null);
     }, []);
 
     const register = useCallback(async (payload: RegisterPayload) => {
@@ -68,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 error,
                 clearError,
                 login,
+                logout,
                 register,
                 refetchUser,
             }}

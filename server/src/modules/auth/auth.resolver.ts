@@ -52,6 +52,12 @@ export class AuthResolver {
         return this.authService.login(input, { req, res });
     }
 
+    @Mutation(() => AuthMessageOutput)
+    async logout(@Context() context: GraphqlContext): Promise<AuthMessageOutput> {
+        await this.authService.logout(context);
+        return { message: 'Logged out successfully', success: true };
+    }
+
     @Query(() => LoggedInUserOutput)
     async profile(@Context() context: GraphqlContext): Promise<LoggedInUserOutput> {
         if (!context.userId) {

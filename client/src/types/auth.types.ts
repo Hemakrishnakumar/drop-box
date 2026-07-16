@@ -6,8 +6,6 @@ import type {
     VerifyEmailMutationVariables,
 } from '@/graphql/generated/graphql';
 
-
-
 export type LoginPayload = LoginMutationVariables;
 export type RegisterPayload = RegisterMutationVariables;
 export type VerifyEmailPayload = VerifyEmailMutationVariables;
@@ -21,6 +19,7 @@ export interface AuthContextValue {
     error: string | null;
     clearError: () => void;
     login: (payload: LoginPayload) => Promise<void>;
+    logout: () => Promise<void>;
     register: (payload: RegisterPayload) => Promise<void>;
     refetchUser: () => Promise<void>;
 }

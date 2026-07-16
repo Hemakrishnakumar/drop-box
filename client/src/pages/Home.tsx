@@ -4,7 +4,8 @@ import {
     FolderOpen,
     Grid2X2,
     History,
-    LayoutDashboard,    
+    LayoutDashboard,
+    LogOut,
     Search,
     Settings,
     Star,
@@ -12,11 +13,10 @@ import {
     Users,
     Zap,
 } from 'lucide-react';
-import { useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context';
-
-
+import { showToast } from '@/lib/toast';
 
 const navigationItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -32,7 +32,10 @@ function initials(firstName?: string, lastName?: string) {
 }
 
 export default function Home() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const usedStorage = Number(user?.storageUsed ?? 0);
     const storageLabel =
         usedStorage > 0 ? `${(usedStorage / 1_000_000_000).toFixed(1)} GB` : '72.4 GB';
@@ -42,6 +45,21 @@ export default function Home() {
         root?.classList.add('home-page-root');
         return () => root?.classList.remove('home-page-root');
     }, []);
+
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            await logout();
+            navigate('/login', { replace: true });
+        } catch (error: unknown) {
+            showToast(
+                (error as { message?: string }).message ?? 'Unable to log out. Please try again.',
+                'error',
+            );
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
 
     return (
         <div className="min-h-screen overflow-x-hidden bg-[#f8f9ff] font-sans text-[#0b1c30]">
@@ -129,7 +147,7 @@ export default function Home() {
                             ⌘ K
                         </kbd>
                     </div>
-                    <div className="flex items-center gap-2 sm:ml-auto">                        
+                    <div className="flex items-center gap-2 sm:ml-auto">
                         <button
                             type="button"
                             aria-label="Notifications"
@@ -145,10 +163,41 @@ export default function Home() {
                         >
                             <Grid2X2 className="h-5 w-5" />
                         </button>
-                        <div className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#004bca] to-[#8a4cfc] p-0.5">
-                            <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-xs font-bold text-[#004bca]">
-                                {initials(user?.firstName, user?.lastName)}
-                            </div>
+                        <div className="relative ml-1">
+                            <button
+                                type="button"
+                                aria-label="Open profile menu"
+                                aria-expanded={isProfileMenuOpen}
+                                onClick={() => setIsProfileMenuOpen((open) => !open)}
+                                className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#004bca] to-[#8a4cfc] p-0.5 shadow-sm transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#0061ff]/40"
+                            >
+                                <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-xs font-bold text-[#004bca]">
+                                    {initials(user?.firstName, user?.lastName)}
+                                </span>
+                            </button>
+                            {isProfileMenuOpen && (
+                                <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-2xl border border-white bg-white/95 p-2 shadow-[0_16px_40px_rgba(31,65,125,0.18)] backdrop-blur-xl animate-in fade-in-0 zoom-in-95">
+                                    <div className="border-b border-slate-100 px-3 py-2.5">
+                                        <p className="truncate text-sm font-bold text-[#0b1c30]">
+                                            {user
+                                                ? `${user.firstName} ${user.lastName}`
+                                                : 'Your profile'}
+                                        </p>
+                                        <p className="truncate text-xs text-slate-500">
+                                            {user?.email}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        disabled={isLoggingOut}
+                                        className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        {isLoggingOut ? 'Logging out...' : 'Log out'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>

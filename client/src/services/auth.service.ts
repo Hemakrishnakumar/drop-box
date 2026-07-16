@@ -8,6 +8,7 @@ import type {
 } from '@/graphql/generated/graphql';
 import {
     LoginDocument,
+    LogoutDocument,
     ProfileDocument,
     RegisterDocument,
     ResendVerificationDocument,
@@ -21,8 +22,6 @@ import type {
     ResendVerificationPayload,
     VerifyEmailPayload,
 } from '@/types';
-
-
 
 export const authService = {
     async login(payload: LoginPayload): Promise<NonNullable<LoginMutation['login']>> {
@@ -46,6 +45,18 @@ export const authService = {
         }
 
         return data.login;
+    },
+
+    async logout(): Promise<void> {
+        const { data } = await graphqlClient.mutate({
+            mutation: LogoutDocument,
+        });
+
+        if (!data?.logout.success) {
+            throw new Error(data?.logout.message ?? 'Unable to log out. Please try again.');
+        }
+
+        await graphqlClient.clearStore();
     },
 
     async register(payload: RegisterPayload): Promise<void> {
@@ -86,7 +97,9 @@ export const authService = {
         });
 
         if (!data?.resendVerification.success) {
-            throw new Error(data?.resendVerification.message ?? 'Unable to resend verification email.');
+            throw new Error(
+                data?.resendVerification.message ?? 'Unable to resend verification email.',
+            );
         }
     },
 };

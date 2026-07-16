@@ -85,6 +85,10 @@ export class SessionService {
         }
     }
 
+    async destroy(sessionId: string): Promise<void> {
+        await this.redisService.del(`${SessionService.KEY_PREFIX}${sessionId}`);
+    }
+
     private getTtlInSeconds(): number {
         const ttlInSeconds = this.appConfig.sessionExpirationInHours * 60 * 60;
 

@@ -1,7 +1,5 @@
 import { gql } from '@apollo/client';
 
-
-
 export const USER_FIELDS = gql`
     fragment UserFields on LoggedInUserOutput {
         email
@@ -24,8 +22,22 @@ export const LOGIN = gql`
     ${USER_FIELDS}
 `;
 
+export const LOGOUT = gql`
+    mutation Logout {
+        logout {
+            success
+            message
+        }
+    }
+`;
+
 export const REGISTER = gql`
-    mutation Register($email: String!, $firstName: String!, $lastName: String!, $password: String!) {
+    mutation Register(
+        $email: String!
+        $firstName: String!
+        $lastName: String!
+        $password: String!
+    ) {
         register(email: $email, firstName: $firstName, lastName: $lastName, password: $password) {
             success
             message

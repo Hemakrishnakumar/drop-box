@@ -208,6 +208,21 @@ export class AuthService {
         };
     }
 
+    async logout(context: GraphqlContext): Promise<void> {
+        const sessionId = this.getCookieValue(context.req.headers.cookie, 'sessionId');
+
+        if (sessionId) {
+            await this.sessionService.destroy(sessionId);
+        }
+
+        context.res.clearCookie('sessionId', {
+            httpOnly: true,
+            secure: this.appConfig.env === 'production',
+            sameSite: this.appConfig.env === 'production' ? 'none' : 'lax',
+            path: '/',
+        });
+    }
+
     async profile(userId: string): Promise<LoggedInUserOutput> {
         const user = await this.userRepository.findOne({
             where: { id: userId },
@@ -290,5 +305,18 @@ export class AuthService {
         }
 
         return timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+    }
+
+    private getCookieValue(cookie: string | undefined, name: string): string | undefined {
+        if (!cookie) {
+            return undefined;
+        }
+
+        const value = cookie
+            .split(';')
+            .map((part) => part.trim().split('='))
+            .find(([key]) => key === name)?.[1];
+
+        return value ? decodeURIComponent(value) : undefined;
     }
 }
