@@ -15,7 +15,7 @@ export interface DirectoryContextValue {
     loading: boolean;
     error: string | null;
     setCurrentDirectoryId: (directoryId: string) => void;
-    addFolder: (folder: DirectoryFolder) => void;
+    createFolder: (name: string) => Promise<DirectoryFolder>;
     refreshDirectory: () => Promise<void>;
 }
 
@@ -53,9 +53,15 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
         }
     }, [currentDirectoryId, user]);
 
-    const addFolder = useCallback((folder: DirectoryFolder) => {
-        setFolderList((folders) => [...folders, folder]);
-    }, []);
+    const createFolder = useCallback(
+        async (name: string) => {
+            if (!currentDirectoryId) throw new Error('No directory is currently selected.');
+            const folder = await directoryService.createFolder(currentDirectoryId, name);
+            setFolderList((folders) => [...folders, folder]);
+            return folder;
+        },
+        [currentDirectoryId],
+    );
 
     useEffect(() => {
         void refreshDirectory();
@@ -70,7 +76,7 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
                 loading,
                 error,
                 setCurrentDirectoryId,
-                addFolder,
+                createFolder,
                 refreshDirectory,
             }}
         >
@@ -78,5 +84,3 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
         </DirectoryContext.Provider>
     );
 }
-
-

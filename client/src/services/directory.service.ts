@@ -55,6 +55,18 @@ const GET_DIRECTORY = gql`
     }
 `;
 
+const CREATE_FOLDER = gql`
+    mutation CreateFolder($parentFolderId: ID!, $name: String!) {
+        createFolder(parentFolderId: $parentFolderId, name: $name) {
+            id
+            name
+            parentFolderId
+            createdAt
+            updatedAt
+        }
+    }
+`;
+
 export const directoryService = {
     async getDirectory(directoryId: string): Promise<DirectoryData> {
         const { data } = await graphqlClient.query<{ getDirectory: DirectoryData }>({
@@ -64,5 +76,15 @@ export const directoryService = {
         });
 
         return data.getDirectory;
+    },
+
+    async createFolder(parentFolderId: string, name: string): Promise<DirectoryFolder> {
+        const { data } = await graphqlClient.mutate<{ createFolder: DirectoryFolder }>({
+            mutation: CREATE_FOLDER,
+            variables: { parentFolderId, name },
+        });
+
+        if (!data?.createFolder) throw new Error('Unable to create folder.');
+        return data.createFolder;
     },
 };

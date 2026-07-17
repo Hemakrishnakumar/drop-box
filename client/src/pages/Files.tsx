@@ -227,7 +227,7 @@ export default function Files() {
         loading,
         error,
         setCurrentDirectoryId,
-        addFolder,
+        createFolder: createDirectoryFolder,
     } = useDirectory();
     const [view, setView] = useState<ViewMode>('grid');
     const [activeFilter, setActiveFilter] = useState('All');
@@ -243,6 +243,8 @@ export default function Files() {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [folderName, setFolderName] = useState('New Folder');
     const [hasSubmittedFolderName, setHasSubmittedFolderName] = useState(false);
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [folderMutationError, setFolderMutationError] = useState<string | null>(null);
 
     const currentFolderId = currentDirectoryId ?? user?.rootFolderId ?? 'root';
     const trimmedFolderName = folderName.trim();
@@ -322,38 +324,43 @@ export default function Files() {
     const openCreateFolderModal = () => {
         setFolderName('New Folder');
         setHasSubmittedFolderName(false);
+        setFolderMutationError(null);
         setIsCreateFolderOpen(true);
     };
     const closeCreateFolderModal = () => setIsCreateFolderOpen(false);
-    const createFolder = (event: FormEvent<HTMLFormElement>) => {
+    const createFolder = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setHasSubmittedFolderName(true);
         if (folderNameError) return;
 
-        const folder: FileItem = {
-            id: `folder-${Date.now()}`,
-            name: trimmedFolderName,
-            kind: 'folder',
-            meta: '0 items',
-            modified: 'Just now',
-            created: 'Today',
-            size: '0 B',
-            visibility: 'Private',
-        };
-
-        addFolder({
-            id: folder.id,
-            name: folder.name,
-            parentFolderId: currentDirectoryId ?? '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        });
-
-        setItemsByFolder((items) => ({
-            ...items,
-            [currentFolderId]: [...(items[currentFolderId] ?? []), folder],
-        }));
-        closeCreateFolderModal();
+        setIsCreatingFolder(true);
+        setFolderMutationError(null);
+        try {
+            const folder = await createDirectoryFolder(trimmedFolderName);
+            setItemsByFolder((items) => ({
+                ...items,
+                [currentFolderId]: [
+                    ...(items[currentFolderId] ?? []),
+                    {
+                        id: folder.id,
+                        name: folder.name,
+                        kind: 'folder',
+                        meta: 'Folder',
+                        modified: new Date(folder.updatedAt).toLocaleDateString(),
+                        created: new Date(folder.createdAt).toLocaleDateString(),
+                        size: '—',
+                        visibility: 'Private',
+                    },
+                ],
+            }));
+            closeCreateFolderModal();
+        } catch (err: unknown) {
+            setFolderMutationError(
+                (err as { message?: string }).message ?? 'Unable to create folder.',
+            );
+        } finally {
+            setIsCreatingFolder(false);
+        }
     };
 
     return (
@@ -697,10 +704,10 @@ export default function Files() {
                         <button
                             type="submit"
                             form="create-folder-form"
-                            disabled={Boolean(folderNameError)}
+                            disabled={Boolean(folderNameError) || isCreatingFolder}
                             className="w-full rounded-xl bg-[#004bca] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#003ea8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-[#1b447d] dark:hover:bg-[#24518e]"
                         >
-                            Create folder
+                            {isCreatingFolder ? 'Creating...' : 'Create folder'}
                         </button>
                     </>
                 }
@@ -732,6 +739,11 @@ export default function Files() {
                             className="mt-2 text-xs font-medium text-red-600 dark:text-red-400"
                         >
                             {folderNameError}
+                        </p>
+                    )}
+                    {folderMutationError && (
+                        <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+                            {folderMutationError}
                         </p>
                     )}
                 </form>
