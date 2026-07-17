@@ -5,3 +5,7 @@ export interface GraphqlContext {
     res: Response;
     userId?: string;
 }
+
+export interface AuthenticatedGraphqlContext extends Omit<GraphqlContext, 'userId'> {
+    userId: string;
+}

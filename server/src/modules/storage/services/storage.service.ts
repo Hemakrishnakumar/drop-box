@@ -1,11 +1,17 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { File } from '../entities/file.entity';
 import { User } from '../../user/entities/user.entity';
 import { Folder } from '../entities/folder.entity';
 import { CreateFolderInput } from '../inputs/create-folder.input';
 import { GetDirectoryInput } from '../inputs/get-directory.input';
+import { RenameFolderInput } from '../inputs/rename-folder.input';
 import { DirectoryOutput } from '../outputs/directory.output';
 import { FileOutput } from '../outputs/file.output';
 import { FolderOutput } from '../outputs/folder.output';
@@ -60,7 +66,7 @@ export class StorageService {
     }
 
     async createFolder(userId: string, input: CreateFolderInput): Promise<FolderOutput> {
-        const name = input.name.trim();
+        const name = this.validateFolderName(input.name);
 
         const parentFolder = await this.folderRepository.findOne({
             where: {
@@ -95,6 +101,55 @@ export class StorageService {
         );
 
         return this.toFolderOutput(folder, parentFolder.id);
+    }
+
+    async renameFolder(userId: string, input: RenameFolderInput): Promise<FolderOutput> {
+        const name = this.validateFolderName(input.name);
+        const folder = await this.folderRepository.findOne({
+            where: {
+                id: input.folderId,
+                owner: { id: userId },
+                deletedAt: IsNull(),
+            },
+            relations: { parentFolder: true },
+        });
+
+        if (!folder) {
+            throw new NotFoundException('Folder was not found.');
+        }
+        if (!folder.parentFolder) {
+            throw new BadRequestException('The root folder cannot be renamed.');
+        }
+        if (folder.name === name) {
+            throw new BadRequestException('Folder name has not changed.');
+        }
+
+        const duplicateFolder = await this.folderRepository.exists({
+            where: {
+                id: Not(folder.id),
+                name,
+                owner: { id: userId },
+                parentFolder: { id: folder.parentFolder.id },
+            },
+        });
+
+        if (duplicateFolder) {
+            throw new ConflictException('A folder with this name already exists in this folder.');
+        }
+
+        folder.name = name;
+        const renamedFolder = await this.folderRepository.save(folder);
+        return this.toFolderOutput(renamedFolder, folder.parentFolder.id);
+    }
+
+    private validateFolderName(value: string): string {
+        const name = value.trim();
+        if (!name || name !== value) {
+            throw new BadRequestException(
+                'Folder name must not be empty or include leading/trailing spaces.',
+            );
+        }
+        return name;
     }
 
     private toFolderOutput(folder: Folder, parentFolderId: string): FolderOutput {

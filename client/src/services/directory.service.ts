@@ -1,5 +1,5 @@
-import { gql } from '@apollo/client';
 import { graphqlClient } from '@/graphql/client';
+import { CreateFolderDocument, GetDirectoryDocument, RenameFolderDocument } from '@/graphql/generated/graphql';
 
 
 
@@ -29,48 +29,10 @@ export interface DirectoryData {
     files: DirectoryFile[];
 }
 
-const GET_DIRECTORY = gql`
-    query GetDirectory($directoryId: ID!) {
-        getDirectory(directoryId: $directoryId) {
-            id
-            name
-            folders {
-                id
-                name
-                parentFolderId
-                createdAt
-                updatedAt
-            }
-            files {
-                id
-                name
-                extension
-                size
-                mimeType
-                folderId
-                createdAt
-                updatedAt
-            }
-        }
-    }
-`;
-
-const CREATE_FOLDER = gql`
-    mutation CreateFolder($parentFolderId: ID!, $name: String!) {
-        createFolder(parentFolderId: $parentFolderId, name: $name) {
-            id
-            name
-            parentFolderId
-            createdAt
-            updatedAt
-        }
-    }
-`;
-
 export const directoryService = {
     async getDirectory(directoryId: string): Promise<DirectoryData> {
         const { data } = await graphqlClient.query<{ getDirectory: DirectoryData }>({
-            query: GET_DIRECTORY,
+            query: GetDirectoryDocument,
             variables: { directoryId },
             fetchPolicy: 'network-only',
         });
@@ -80,11 +42,21 @@ export const directoryService = {
 
     async createFolder(parentFolderId: string, name: string): Promise<DirectoryFolder> {
         const { data } = await graphqlClient.mutate<{ createFolder: DirectoryFolder }>({
-            mutation: CREATE_FOLDER,
+            mutation: CreateFolderDocument,
             variables: { parentFolderId, name },
         });
 
         if (!data?.createFolder) throw new Error('Unable to create folder.');
         return data.createFolder;
+    },
+
+    async renameFolder(folderId: string, name: string): Promise<DirectoryFolder> {
+        const { data } = await graphqlClient.mutate<{ renameFolder: DirectoryFolder }>({
+            mutation: RenameFolderDocument,
+            variables: { folderId, name },
+        });
+
+        if (!data?.renameFolder) throw new Error('Unable to rename folder.');
+        return data.renameFolder;
     },
 };

@@ -1,11 +1,11 @@
-import { UnauthorizedException } from '@nestjs/common';
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
-import type { GraphqlContext } from 'src/common/types/common';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CreateFolderInput } from './inputs/create-folder.input';
 import { GetDirectoryInput } from './inputs/get-directory.input';
+import { RenameFolderInput } from './inputs/rename-folder.input';
 import { DirectoryOutput } from './outputs/directory.output';
 import { FolderOutput } from './outputs/folder.output';
 import { StorageService } from './services/storage.service';
+import { CurrentUserId } from 'src/common/decorators/current.user-id';
 
 @Resolver(() => FolderOutput)
 export class StorageResolver {
@@ -14,22 +14,24 @@ export class StorageResolver {
     @Query(() => DirectoryOutput)
     async getDirectory(
         @Args() input: GetDirectoryInput,
-        @Context() context: GraphqlContext,
+        @CurrentUserId() userId: string,
     ): Promise<DirectoryOutput> {
-        if (!context.userId) {
-            throw new UnauthorizedException('Authentication is required.');
-        }
-        return this.storageService.getDirectory(context.userId, input);
+        return this.storageService.getDirectory(userId, input);
     }
 
     @Mutation(() => FolderOutput)
     async createFolder(
         @Args() input: CreateFolderInput,
-        @Context() context: GraphqlContext,
+        @CurrentUserId() userId: string,
     ): Promise<FolderOutput> {
-        if (!context.userId) {
-            throw new UnauthorizedException('Authentication is required.');
-        }
-        return this.storageService.createFolder(context.userId, input);
+        return this.storageService.createFolder(userId, input);
+    }
+
+    @Mutation(() => FolderOutput)
+    async renameFolder(
+        @Args() input: RenameFolderInput,
+        @CurrentUserId() userId: string,
+    ): Promise<FolderOutput> {
+        return this.storageService.renameFolder(userId, input);
     }
 }

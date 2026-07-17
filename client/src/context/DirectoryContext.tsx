@@ -16,6 +16,7 @@ export interface DirectoryContextValue {
     error: string | null;
     setCurrentDirectoryId: (directoryId: string) => void;
     createFolder: (name: string) => Promise<DirectoryFolder>;
+    renameFolder: (folderId: string, name: string) => Promise<DirectoryFolder>;
     refreshDirectory: () => Promise<void>;
 }
 
@@ -63,6 +64,15 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
         [currentDirectoryId],
     );
 
+    const renameFolder = useCallback(
+        async (folderId: string, name: string) => {
+            const folder = await directoryService.renameFolder(folderId, name);
+            setFolderList((folders) => folders.map((item) => (item.id === folderId ? folder : item)));
+            return folder;
+        },
+        [],
+    );
+
     useEffect(() => {
         void refreshDirectory();
     }, [refreshDirectory]);
@@ -77,6 +87,7 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
                 error,
                 setCurrentDirectoryId,
                 createFolder,
+                renameFolder,
                 refreshDirectory,
             }}
         >

@@ -24,10 +24,11 @@ import {
     Video,
     X,
 } from 'lucide-react';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Modal } from '@/components/modals';
 import { useAuth } from '@/context';
 import { useDirectory } from '@/context/index';
+import { getFolderNameError } from '@/utils/folderName';
 
 
 
@@ -228,6 +229,7 @@ export default function Files() {
         error,
         setCurrentDirectoryId,
         createFolder: createDirectoryFolder,
+        renameFolder: renameDirectoryFolder,
     } = useDirectory();
     const [view, setView] = useState<ViewMode>('grid');
     const [activeFilter, setActiveFilter] = useState('All');
@@ -236,24 +238,24 @@ export default function Files() {
     const [preview, setPreview] = useState<FileItem | null>(null);
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
     const [query, setQuery] = useState('');
-    const [itemsByFolder, setItemsByFolder] = useState<Record<string, FileItem[]>>(() => ({
+    const [itemsByFolder] = useState<Record<string, FileItem[]>>(() => ({
         root: rootItems,
         ...nestedItems,
     }));
-    const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+    const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+    const [folderModalMode, setFolderModalMode] = useState<'create' | 'rename'>('create');
+    const [folderToRename, setFolderToRename] = useState<FileItem | null>(null);
     const [folderName, setFolderName] = useState('New Folder');
     const [hasSubmittedFolderName, setHasSubmittedFolderName] = useState(false);
-    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [isSubmittingFolder, setIsSubmittingFolder] = useState(false);
     const [folderMutationError, setFolderMutationError] = useState<string | null>(null);
 
     const currentFolderId = currentDirectoryId ?? user?.rootFolderId ?? 'root';
     const trimmedFolderName = folderName.trim();
-    const folderNameError =
-        trimmedFolderName.length === 0
-            ? 'Folder name is required.'
-            : folderName !== trimmedFolderName
-                ? 'Folder name cannot start or end with spaces.'
-                : undefined;
+    const folderNameError = getFolderNameError(
+        folderName,
+        folderModalMode === 'rename' ? folderToRename?.name : undefined,
+    );
 
     const currentItems = useMemo(() => {
         if (!currentDirectoryId) return itemsByFolder[currentFolderId] ?? [];
@@ -321,45 +323,65 @@ export default function Files() {
         setSelected((items) =>
             items.includes(id) ? items.filter((item) => item !== id) : [...items, id],
         );
+    const closeActionMenu = () => setMenuOpen(null);
+
+    useEffect(() => {
+        if (!menuOpen) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            const target = event.target;
+            if (target instanceof HTMLElement) {
+                if (target.closest('[data-action-menu]')) return;
+                if (target.closest('button[aria-label="Open item actions"]')) return;
+            }
+
+            closeActionMenu();
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [menuOpen]);
+
     const openCreateFolderModal = () => {
+        setFolderModalMode('create');
+        setFolderToRename(null);
         setFolderName('New Folder');
         setHasSubmittedFolderName(false);
         setFolderMutationError(null);
-        setIsCreateFolderOpen(true);
+        setIsFolderModalOpen(true);
     };
-    const closeCreateFolderModal = () => setIsCreateFolderOpen(false);
-    const createFolder = async (event: FormEvent<HTMLFormElement>) => {
+    const openRenameFolderModal = (item: FileItem) => {
+        setFolderModalMode('rename');
+        setFolderToRename(item);
+        setFolderName(item.name);
+        setHasSubmittedFolderName(false);
+        setFolderMutationError(null);
+        setIsFolderModalOpen(true);
+    };
+    const closeFolderModal = () => setIsFolderModalOpen(false);
+    const submitFolder = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setHasSubmittedFolderName(true);
         if (folderNameError) return;
 
-        setIsCreatingFolder(true);
+        setIsSubmittingFolder(true);
         setFolderMutationError(null);
         try {
-            const folder = await createDirectoryFolder(trimmedFolderName);
-            setItemsByFolder((items) => ({
-                ...items,
-                [currentFolderId]: [
-                    ...(items[currentFolderId] ?? []),
-                    {
-                        id: folder.id,
-                        name: folder.name,
-                        kind: 'folder',
-                        meta: 'Folder',
-                        modified: new Date(folder.updatedAt).toLocaleDateString(),
-                        created: new Date(folder.createdAt).toLocaleDateString(),
-                        size: '—',
-                        visibility: 'Private',
-                    },
-                ],
-            }));
-            closeCreateFolderModal();
+            if (folderModalMode === 'create') {
+                await createDirectoryFolder(trimmedFolderName);
+            } else if (folderModalMode === 'rename' && folderToRename) {
+                await renameDirectoryFolder(folderToRename.id, trimmedFolderName);
+            }
+            closeFolderModal();
         } catch (err: unknown) {
             setFolderMutationError(
-                (err as { message?: string }).message ?? 'Unable to create folder.',
+                (err as { message?: string }).message ??
+                    (folderModalMode === 'rename'
+                        ? 'Unable to rename folder.'
+                        : 'Unable to create folder.'),
             );
         } finally {
-            setIsCreatingFolder(false);
+            setIsSubmittingFolder(false);
         }
     };
 
@@ -559,6 +581,7 @@ export default function Files() {
                                         </div>
                                         <button
                                             type="button"
+                                            aria-label="Open item actions"
                                             onClick={(event) => {
                                                 event.stopPropagation();
                                                 setMenuOpen(menuOpen === item.id ? null : item.id);
@@ -579,7 +602,12 @@ export default function Files() {
                                         )}
                                     </div>
                                     {menuOpen === item.id && (
-                                        <ActionMenu onPreview={() => setPreview(item)} />
+                                        <ActionMenu
+                                            item={item}
+                                            onClose={closeActionMenu}
+                                            onPreview={() => setPreview(item)}
+                                            onRename={openRenameFolderModal}
+                                        />
                                     )}
                                 </article>
                             ))}
@@ -638,6 +666,7 @@ export default function Files() {
                                     </span>
                                     <button
                                         type="button"
+                                        aria-label="Open item actions"
                                         onClick={() =>
                                             setMenuOpen(menuOpen === item.id ? null : item.id)
                                         }
@@ -645,7 +674,12 @@ export default function Files() {
                                     >
                                         <MoreHorizontal className="h-4 w-4" />
                                         {menuOpen === item.id && (
-                                            <ActionMenu onPreview={() => setPreview(item)} />
+                                            <ActionMenu
+                                                item={item}
+                                                onClose={closeActionMenu}
+                                                onPreview={() => setPreview(item)}
+                                                onRename={openRenameFolderModal}
+                                            />
                                         )}
                                     </button>
                                 </div>
@@ -687,32 +721,42 @@ export default function Files() {
                 </div>
             )}
             <Modal
-                isOpen={isCreateFolderOpen}
-                onClose={closeCreateFolderModal}
-                title="Create folder"
-                description="Choose a name for your new folder."
+                isOpen={isFolderModalOpen}
+                onClose={closeFolderModal}
+                title={folderModalMode === 'rename' ? 'Rename folder' : 'Create folder'}
+                description={
+                    folderModalMode === 'rename'
+                        ? 'Choose a new name for this folder.'
+                        : 'Choose a name for your new folder.'
+                }
                 size="sm"
                 footer={
                     <>
                         <button
                             type="button"
-                            onClick={closeCreateFolderModal}
+                            onClick={closeFolderModal}
                             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 sm:w-auto dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            form="create-folder-form"
-                            disabled={Boolean(folderNameError) || isCreatingFolder}
+                            form="folder-form"
+                            disabled={Boolean(folderNameError) || isSubmittingFolder}
                             className="w-full rounded-xl bg-[#004bca] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#003ea8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-[#1b447d] dark:hover:bg-[#24518e]"
                         >
-                            {isCreatingFolder ? 'Creating...' : 'Create folder'}
+                            {isSubmittingFolder
+                                ? folderModalMode === 'rename'
+                                    ? 'Saving...'
+                                    : 'Creating...'
+                                : folderModalMode === 'rename'
+                                    ? 'Save changes'
+                                    : 'Create folder'}
                         </button>
                     </>
                 }
             >
-                <form id="create-folder-form" onSubmit={createFolder}>
+                <form id="folder-form" onSubmit={submitFolder}>
                     <label
                         htmlFor="folder-name"
                         className="block text-sm font-semibold text-slate-700 dark:text-slate-200"
@@ -753,36 +797,63 @@ export default function Files() {
     );
 }
 
-function ActionMenu({ onPreview }: { onPreview: () => void }) {
+function ActionMenu({
+    item,
+    onClose,
+    onPreview,
+    onRename,
+}: {
+    item: FileItem;
+    onClose: () => void;
+    onPreview: () => void;
+    onRename: (item: FileItem) => void;
+}) {
     return (
-        <div className="absolute right-3 top-12 z-20 w-36 rounded-xl border border-slate-100 bg-white p-1.5 text-left text-xs font-medium text-slate-700 shadow-xl">
+        <div
+            data-action-menu
+            className="absolute right-3 top-12 z-20 w-36 rounded-xl border border-slate-100 bg-white p-1.5 text-left text-xs font-medium text-slate-700 shadow-xl"
+        >
             <button
                 type="button"
+                onClick={onClose}
                 className="block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
             >
                 Open
             </button>
             <button
                 type="button"
-                onClick={onPreview}
+                onClick={() => {
+                    onClose();
+                    onPreview();
+                }}
                 className="block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
             >
                 Preview
             </button>
+            {item.kind === 'folder' && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        onClose();
+                        onRename(item);
+                    }}
+                    className="block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
+                >
+                    Rename
+                </button>
+            )}
             <button
                 type="button"
-                className="block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
-            >
-                Rename
-            </button>
-            <button
-                type="button"
+                onClick={onClose}
                 className="block w-full rounded-lg px-3 py-2 text-left hover:bg-slate-50"
             >
                 Copy link
             </button>
             <button
                 type="button"
+                onClick={() => {
+                    onClose();
+                }}
                 className="block w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"
             >
                 Delete
