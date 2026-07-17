@@ -17,6 +17,9 @@ export class LoggedInUserOutput {
     // PostgreSQL bigint values are represented as strings to preserve precision.
     @Field()
     storageUsed!: string;
+
+    @Field()
+    rootFolderId!: string;
 }
 
 @ObjectType()

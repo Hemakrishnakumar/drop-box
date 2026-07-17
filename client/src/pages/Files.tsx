@@ -24,7 +24,10 @@ import {
     Video,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Modal } from '@/components/modals';
+import { useAuth } from '@/context';
+import { useDirectory } from '@/context/index';
 
 
 
@@ -216,6 +219,16 @@ function visibilityStyle(visibility: FileItem['visibility']) {
 }
 
 export default function Files() {
+    const { user } = useAuth();
+    const {
+        currentDirectoryId,
+        folderList,
+        fileList,
+        loading,
+        error,
+        setCurrentDirectoryId,
+        addFolder,
+    } = useDirectory();
     const [view, setView] = useState<ViewMode>('grid');
     const [activeFilter, setActiveFilter] = useState('All');
     const [folderPath, setFolderPath] = useState<{ id: string; name: string }[]>([]);
@@ -223,11 +236,57 @@ export default function Files() {
     const [preview, setPreview] = useState<FileItem | null>(null);
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
     const [query, setQuery] = useState('');
+    const [itemsByFolder, setItemsByFolder] = useState<Record<string, FileItem[]>>(() => ({
+        root: rootItems,
+        ...nestedItems,
+    }));
+    const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+    const [folderName, setFolderName] = useState('New Folder');
+    const [hasSubmittedFolderName, setHasSubmittedFolderName] = useState(false);
 
-    const currentItems = useMemo(
-        () => (folderPath.length ? (nestedItems[folderPath.at(-1)?.id ?? ''] ?? []) : rootItems),
-        [folderPath],
-    );
+    const currentFolderId = currentDirectoryId ?? user?.rootFolderId ?? 'root';
+    const trimmedFolderName = folderName.trim();
+    const folderNameError =
+        trimmedFolderName.length === 0
+            ? 'Folder name is required.'
+            : folderName !== trimmedFolderName
+                ? 'Folder name cannot start or end with spaces.'
+                : undefined;
+
+    const currentItems = useMemo(() => {
+        if (!currentDirectoryId) return itemsByFolder[currentFolderId] ?? [];
+
+        const folders: FileItem[] = folderList.map((folder) => ({
+            id: folder.id,
+            name: folder.name,
+            kind: 'folder',
+            meta: 'Folder',
+            modified: new Date(folder.updatedAt).toLocaleDateString(),
+            created: new Date(folder.createdAt).toLocaleDateString(),
+            size: '—',
+            visibility: 'Private',
+        }));
+        const files: FileItem[] = fileList.map((file) => ({
+            id: file.id,
+            name: file.name,
+            kind: file.mimeType.startsWith('image/')
+                ? 'image'
+                : file.mimeType.startsWith('video/')
+                    ? 'video'
+                    : file.mimeType.startsWith('audio/')
+                        ? 'audio'
+                        : file.extension.toLowerCase() === 'zip'
+                            ? 'archive'
+                            : 'document',
+            meta: file.mimeType,
+            modified: new Date(file.updatedAt).toLocaleDateString(),
+            created: new Date(file.createdAt).toLocaleDateString(),
+            size: `${file.size} B`,
+            visibility: 'Private',
+        }));
+
+        return [...folders, ...files];
+    }, [currentDirectoryId, currentFolderId, fileList, folderList, itemsByFolder]);
     const visibleItems = useMemo(
         () =>
             currentItems.filter((item) => {
@@ -253,12 +312,49 @@ export default function Files() {
     const openFolder = (item: FileItem) => {
         if (item.kind !== 'folder') return setPreview(item);
         setFolderPath((path) => [...path, { id: item.id, name: item.name }]);
+        setCurrentDirectoryId(item.id);
         setSelected([]);
     };
     const toggleSelection = (id: string) =>
         setSelected((items) =>
             items.includes(id) ? items.filter((item) => item !== id) : [...items, id],
         );
+    const openCreateFolderModal = () => {
+        setFolderName('New Folder');
+        setHasSubmittedFolderName(false);
+        setIsCreateFolderOpen(true);
+    };
+    const closeCreateFolderModal = () => setIsCreateFolderOpen(false);
+    const createFolder = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setHasSubmittedFolderName(true);
+        if (folderNameError) return;
+
+        const folder: FileItem = {
+            id: `folder-${Date.now()}`,
+            name: trimmedFolderName,
+            kind: 'folder',
+            meta: '0 items',
+            modified: 'Just now',
+            created: 'Today',
+            size: '0 B',
+            visibility: 'Private',
+        };
+
+        addFolder({
+            id: folder.id,
+            name: folder.name,
+            parentFolderId: currentDirectoryId ?? '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+
+        setItemsByFolder((items) => ({
+            ...items,
+            [currentFolderId]: [...(items[currentFolderId] ?? []), folder],
+        }));
+        closeCreateFolderModal();
+    };
 
     return (
         <div className="flex h-screen flex-col overflow-hidden px-4 pb-5 pt-20 sm:px-6 lg:px-6 lg:pb-6 lg:pt-28">
@@ -276,6 +372,7 @@ export default function Files() {
                     </button>
                     <button
                         type="button"
+                        onClick={openCreateFolderModal}
                         className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
                     >
                         <Plus className="h-4 w-4" />
@@ -288,7 +385,10 @@ export default function Files() {
                 <div className="flex flex-wrap items-center gap-1 text-sm">
                     <button
                         type="button"
-                        onClick={() => setFolderPath([])}
+                        onClick={() => {
+                            setFolderPath([]);
+                            if (user?.rootFolderId) setCurrentDirectoryId(user.rootFolderId);
+                        }}
                         className="rounded-lg p-1.5 text-[#0052dc] transition hover:bg-blue-50"
                     >
                         <Home className="h-4 w-4" />
@@ -298,7 +398,13 @@ export default function Files() {
                             <ChevronRight className="h-4 w-4 text-slate-400" />
                             <button
                                 type="button"
-                                onClick={() => setFolderPath((path) => path.slice(0, index + 1))}
+                                onClick={() => {
+                                    const nextPath = folderPath.slice(0, index + 1);
+                                    setFolderPath(nextPath);
+                                    setCurrentDirectoryId(
+                                        nextPath.at(-1)?.id ?? user?.rootFolderId ?? '',
+                                    );
+                                }}
                                 className={`rounded-md px-1.5 py-1 transition hover:bg-blue-50 ${index === folderPath.length - 1 ? 'font-semibold text-[#004bca]' : 'text-slate-600'}`}
                             >
                                 {crumb.name}
@@ -377,6 +483,16 @@ export default function Files() {
             </section>
 
             <section className="min-h-0 flex-1 overflow-hidden rounded-[28px] border border-white/80 bg-white/55 p-3 shadow-sm sm:p-4">
+                {error && (
+                    <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                        {error}
+                    </div>
+                )}
+                {loading && (
+                    <div className="mb-3 rounded-xl bg-slate-100/80 px-4 py-3 text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">
+                        Loading directory...
+                    </div>
+                )}
                 {visibleItems.length === 0 ? (
                     <div className="grid h-full min-h-64 place-items-center text-center">
                         <div>
@@ -396,6 +512,7 @@ export default function Files() {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={openCreateFolderModal}
                                     className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-700 ring-1 ring-slate-200"
                                 >
                                     Create folder
@@ -562,6 +679,63 @@ export default function Files() {
                     </button>
                 </div>
             )}
+            <Modal
+                isOpen={isCreateFolderOpen}
+                onClose={closeCreateFolderModal}
+                title="Create folder"
+                description="Choose a name for your new folder."
+                size="sm"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            onClick={closeCreateFolderModal}
+                            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 sm:w-auto dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            form="create-folder-form"
+                            disabled={Boolean(folderNameError)}
+                            className="w-full rounded-xl bg-[#004bca] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#003ea8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-[#1b447d] dark:hover:bg-[#24518e]"
+                        >
+                            Create folder
+                        </button>
+                    </>
+                }
+            >
+                <form id="create-folder-form" onSubmit={createFolder}>
+                    <label
+                        htmlFor="folder-name"
+                        className="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                        Folder name
+                    </label>
+                    <input
+                        id="folder-name"
+                        value={folderName}
+                        onChange={(event) => setFolderName(event.target.value)}
+                        onBlur={() => setHasSubmittedFolderName(true)}
+                        autoFocus
+                        aria-invalid={Boolean(hasSubmittedFolderName && folderNameError)}
+                        aria-describedby={
+                            hasSubmittedFolderName && folderNameError
+                                ? 'folder-name-error'
+                                : undefined
+                        }
+                        className={`mt-2 h-11 w-full rounded-xl border bg-white px-3 text-sm font-medium text-slate-800 outline-none ring-[#0061ff]/25 transition placeholder:text-slate-400 focus:ring-2 dark:bg-slate-900 dark:text-slate-200 ${hasSubmittedFolderName && folderNameError ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+                    />
+                    {hasSubmittedFolderName && folderNameError && (
+                        <p
+                            id="folder-name-error"
+                            className="mt-2 text-xs font-medium text-red-600 dark:text-red-400"
+                        >
+                            {folderNameError}
+                        </p>
+                    )}
+                </form>
+            </Modal>
             {preview && <PreviewModal item={preview} onClose={() => setPreview(null)} />}
         </div>
     );
@@ -607,37 +781,20 @@ function ActionMenu({ onPreview }: { onPreview: () => void }) {
 
 function PreviewModal({ item, onClose }: { item: FileItem; onClose: () => void }) {
     return (
-        <div
-            className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
+        <Modal
+            isOpen
+            onClose={onClose}
+            title={item.name}
+            description={`${item.meta} · ${item.size}`}
+            size="lg"
+            bodyClassName="grid min-h-64 place-items-center bg-slate-50 p-8 text-center dark:bg-[#0d1626]"
         >
-            <section className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
-                <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                    <div>
-                        <h2 className="font-bold">{item.name}</h2>
-                        <p className="text-xs text-slate-500">
-                            {item.meta} · {item.size}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Close preview"
-                        className="rounded-xl p-2 hover:bg-slate-100"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-                </header>
-                <div className="grid min-h-64 place-items-center bg-slate-50 p-8 text-center">
-                    <span className="rounded-3xl bg-white p-7 text-[#0061ff] shadow-sm">
-                        {iconFor(item.kind, 'h-16 w-16')}
-                    </span>
-                    <p className="mt-5 text-sm text-slate-500">
-                        Preview placeholder for this {item.meta.toLowerCase()}.
-                    </p>
-                </div>
-            </section>
-        </div>
+            <span className="rounded-3xl bg-white p-7 text-[#0061ff] shadow-sm dark:bg-slate-800 dark:text-blue-400">
+                {iconFor(item.kind, 'h-16 w-16')}
+            </span>
+            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
+                Preview placeholder for this {item.meta.toLowerCase()}.
+            </p>
+        </Modal>
     );
 }

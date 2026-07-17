@@ -164,6 +164,7 @@ export class AuthService {
             where: {
                 email,
             },
+            relations: { rootFolder: true },
             select: {
                 id: true,
                 email: true,
@@ -173,6 +174,7 @@ export class AuthService {
                 lastName: true,
                 profilePhoto: true,
                 storageUsed: true,
+                rootFolder: { id: true },
             },
         });
         if (!user || !user?.password || !(await argon2.verify(user.password, password))) {
@@ -188,6 +190,7 @@ export class AuthService {
         const googleUser = await this.googleIdTokenService.verify(dto.token);
         let user = await this.userRepository.findOne({
             where: { email: googleUser.email },
+            relations: { rootFolder: true },
         });
 
         if (!user) {
@@ -237,6 +240,7 @@ export class AuthService {
     async profile(userId: string): Promise<LoggedInUserOutput> {
         const user = await this.userRepository.findOne({
             where: { id: userId },
+            relations: { rootFolder: true },
         });
 
         if (!user) {
@@ -249,6 +253,7 @@ export class AuthService {
             lastName: user.lastName,
             photo: user.profilePhoto,
             storageUsed: String(user.storageUsed),
+            rootFolderId: user.rootFolder.id,
         };
     }
 
@@ -275,6 +280,7 @@ export class AuthService {
                 lastName: user.lastName,
                 photo: user.profilePhoto,
                 storageUsed: String(user.storageUsed),
+                rootFolderId: user.rootFolder.id,
             },
         };
     }

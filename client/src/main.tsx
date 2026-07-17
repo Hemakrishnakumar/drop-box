@@ -5,22 +5,25 @@ import './index.css';
 import App from './App.tsx';
 import { ErrorBoundaryClass } from './components/ErrorBoundary.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
+import { DirectoryProvider } from './context/DirectoryContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { Toaster } from './components/ui/sonner.tsx';
 
 
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string || "hvjfhv";
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || 'hvjfhv';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ErrorBoundaryClass  >
+        <ErrorBoundaryClass>
             <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
                 <AuthProvider>
-                    <ThemeProvider >
-                        <App />
-                        <Toaster />
-                    </ThemeProvider>
+                    <DirectoryProvider>
+                        <ThemeProvider>
+                            <App />
+                            <Toaster />
+                        </ThemeProvider>
+                    </DirectoryProvider>
                 </AuthProvider>
             </GoogleOAuthProvider>
         </ErrorBoundaryClass>

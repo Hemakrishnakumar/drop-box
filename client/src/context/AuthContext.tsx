@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
 
         try {
-            const { user: authenticatedUser } = await authService.login(payload);
-            setUser(authenticatedUser);
+            await authService.login(payload);
+            setUser(await authService.getProfile());
         } catch (err: unknown) {
             const message =
                 (err as { message?: string }).message ?? 'Login failed. Please try again.';
@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
 
         try {
-            const { user: authenticatedUser } = await authService.googleSignIn(payload);
-            setUser(authenticatedUser);
+            await authService.googleSignIn(payload);
+            setUser(await authService.getProfile());
         } catch (err: unknown) {
             const message =
                 (err as { message?: string }).message ?? 'Google sign-in failed. Please try again.';

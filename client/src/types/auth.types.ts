@@ -3,7 +3,6 @@ import type {
     GoogleSignInMutationVariables,
     RegisterMutationVariables,
     ResendVerificationMutationVariables,
-    UserFieldsFragment,
     VerifyEmailMutationVariables,
 } from '@/graphql/generated/graphql';
 
@@ -14,7 +13,14 @@ export type GoogleSignInPayload = GoogleSignInMutationVariables;
 export type RegisterPayload = RegisterMutationVariables;
 export type VerifyEmailPayload = VerifyEmailMutationVariables;
 export type ResendVerificationPayload = ResendVerificationMutationVariables;
-export type AuthUser = UserFieldsFragment;
+export interface AuthUser {
+    email: string;
+    firstName: string;
+    lastName: string;
+    photo?: string | null;
+    storageUsed: string;
+    rootFolderId: string;
+}
 
 export interface AuthContextValue {
     user: AuthUser | null;

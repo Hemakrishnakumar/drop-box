@@ -3,7 +3,6 @@ import type {
     LoginMutationVariables,
     GoogleSignInMutation,
     GoogleSignInMutationVariables,
-    ProfileQuery,
     RegisterMutationVariables,
     ResendVerificationMutationVariables,
     VerifyEmailMutationVariables,
@@ -18,6 +17,7 @@ import {
     VerifyEmailDocument,
 } from '@/graphql/generated/graphql';
 import { graphqlClient } from '@/graphql/client';
+import { PROFILE } from '@/graphql/auth/auth.operations';
 import type {
     AuthUser,
     LoginPayload,
@@ -102,12 +102,12 @@ export const authService = {
     },
 
     async getProfile(): Promise<AuthUser> {
-        const { data } = await graphqlClient.query({
-            query: ProfileDocument,
-            fetchPolicy: 'cache-first',
+        const { data } = await graphqlClient.query<{ profile: AuthUser }>({
+            query: PROFILE,
+            fetchPolicy: 'network-only',
         });
 
-        return data.profile as ProfileQuery['profile'];
+        return data.profile;
     },
 
     async verifyEmail(payload: VerifyEmailPayload): Promise<void> {

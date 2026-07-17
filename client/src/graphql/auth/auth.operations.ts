@@ -9,6 +9,7 @@ export const USER_FIELDS = gql`
         lastName
         photo
         storageUsed
+        rootFolderId
     }
 `;
 
